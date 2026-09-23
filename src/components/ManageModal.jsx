@@ -40,6 +40,21 @@ export default function ManageModal() {
   const [activeTab, setActiveTab] = useState('orders');
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState(null);
+  const [now, setNow] = useState(Date.now());
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinChangeMsg, setPinChangeMsg] = useState({ type: '', text: '' });
+
+  React.useEffect(() => {
+    if (!lockedUntil) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [lockedUntil]);
+
+  const isLocked = lockedUntil && now < lockedUntil;
+  const secondsLeft = isLocked ? Math.ceil((lockedUntil - now) / 1000) : 0;
 
   // Draft states
   const [editSettings, setEditSettings] = useState({ ...storeSettings });
@@ -76,12 +91,40 @@ export default function ManageModal() {
 
   const handlePinSubmit = (e) => {
     e.preventDefault();
+    if (isLocked) return;
     if (pinInput === (storeSettings.adminPin || '1234')) {
       setIsOwnerAuthenticated(true);
       setPinError('');
+      setFailedAttempts(0);
     } else {
-      setPinError('Incorrect PIN. Default PIN is 1234.');
+      const attempts = failedAttempts + 1;
+      setFailedAttempts(attempts);
+      setPinInput('');
+      if (attempts >= 5) {
+        setLockedUntil(Date.now() + 60000);
+        setPinError('Too many failed attempts. Locked for 60 seconds.');
+      } else {
+        setPinError(`Incorrect PIN. ${5 - attempts} attempt${5 - attempts === 1 ? '' : 's'} left before a lockout.`);
+      }
     }
+  };
+
+  const handleChangePin = (e) => {
+    e.preventDefault();
+    if (!/^\d{4,8}$/.test(newPin)) {
+      setPinChangeMsg({ type: 'error', text: 'PIN must be 4–8 digits.' });
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinChangeMsg({ type: 'error', text: 'PINs don\u2019t match.' });
+      return;
+    }
+    const updatedSettings = { ...editSettings, adminPin: newPin };
+    setEditSettings(updatedSettings);
+    saveAndPublishStore(updatedSettings, editProducts, editOrders);
+    setNewPin('');
+    setConfirmPin('');
+    setPinChangeMsg({ type: 'success', text: 'PIN updated and published.' });
   };
 
   const handlePublish = () => {
@@ -260,7 +303,7 @@ export default function ManageModal() {
 
   return (
     <div className="modal-overlay" onClick={() => setIsManageOpen(false)}>
-      <div className="modal-content" style={{ maxWidth: '760px' }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content manage-modal" style={{ maxWidth: '760px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2 className="modal-title">
             <Settings size={20} color="var(--primary)" />
@@ -279,11 +322,17 @@ export default function ManageModal() {
               </div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Owner Authentication</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                Enter your owner PIN to manage SHARP SHARP store settings, orders & stock. (Default: 1234)
+                Enter your owner PIN to manage SHARP SHARP store settings, orders & stock.
               </p>
             </div>
 
-            {pinError && (
+            {isLocked && (
+              <div className="pin-lock-notice">
+                Too many failed attempts. Try again in {secondsLeft}s.
+              </div>
+            )}
+
+            {!isLocked && pinError && (
               <div style={{ color: '#f87171', fontSize: '0.85rem', textAlign: 'center', marginBottom: '0.85rem' }}>
                 {pinError}
               </div>
@@ -292,17 +341,19 @@ export default function ManageModal() {
             <div className="form-group">
               <input
                 type="password"
+                inputMode="numeric"
                 className="form-input"
-                placeholder="Enter 4-digit PIN (1234)"
+                placeholder="Enter PIN"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
+                disabled={isLocked}
                 autoFocus
               />
             </div>
 
-            <button type="submit" className="btn-publish" style={{ marginTop: '0.5rem' }}>
+            <button type="submit" className="btn-publish" style={{ marginTop: '0.5rem' }} disabled={isLocked}>
               <Lock size={16} />
-              <span>Unlock Admin Panel</span>
+              <span>{isLocked ? `Locked (${secondsLeft}s)` : 'Unlock Admin Panel'}</span>
             </button>
           </form>
         ) : (
@@ -485,7 +536,7 @@ export default function ManageModal() {
                         <ImageIcon size={14} />
                         <span>Update Photos & Videos (Videos max 5MB)</span>
                       </label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <div className="form-grid-2" style={{ marginBottom: '0.5rem' }}>
                         <label
                           style={{
                             background: 'rgba(99, 102, 241, 0.2)',
@@ -557,7 +608,7 @@ export default function ManageModal() {
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <div className="form-grid-2" style={{ marginBottom: '0.75rem' }}>
                       <div className="form-group">
                         <label className="form-label">Price ({editSettings.currency}) *</label>
                         <input
@@ -653,7 +704,7 @@ export default function ManageModal() {
                         <ImageIcon size={14} />
                         <span>Add Photos & Videos (Videos max 5MB)</span>
                       </label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <div className="form-grid-2" style={{ marginBottom: '0.5rem' }}>
                         <label
                           style={{
                             background: 'rgba(99, 102, 241, 0.15)',
@@ -733,7 +784,7 @@ export default function ManageModal() {
                       />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <div className="form-grid-2" style={{ marginBottom: '0.75rem' }}>
                       <div className="form-group">
                         <label className="form-label">Price ({editSettings.currency}) *</label>
                         <input
@@ -875,6 +926,44 @@ export default function ManageModal() {
             {/* TAB 3: STORE SETTINGS */}
             {activeTab === 'settings' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {(!storeSettings.adminPin || storeSettings.adminPin === '1234') && (
+                  <div className="pin-default-notice">
+                    ⚠️ You're still on the starter PIN. Set a personal PIN below before sharing this link.
+                  </div>
+                )}
+
+                <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '0.85rem' }}>
+                  <label className="form-label" style={{ marginBottom: '0.5rem' }}>
+                    <Lock size={14} /> Change Admin PIN
+                  </label>
+                  <div className="form-grid-2" style={{ marginBottom: '0.5rem' }}>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      className="form-input"
+                      placeholder="New PIN (4-8 digits)"
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value)}
+                    />
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      className="form-input"
+                      placeholder="Confirm new PIN"
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value)}
+                    />
+                  </div>
+                  {pinChangeMsg.text && (
+                    <div style={{ fontSize: '0.8rem', marginBottom: '0.5rem', color: pinChangeMsg.type === 'error' ? '#f87171' : '#4ade80' }}>
+                      {pinChangeMsg.text}
+                    </div>
+                  )}
+                  <button type="button" className="btn-icon" style={{ width: '100%', justifyContent: 'center', padding: '0.55rem' }} onClick={handleChangePin}>
+                    Update PIN
+                  </button>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Store Name</label>
                   <input
@@ -895,7 +984,7 @@ export default function ManageModal() {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div className="form-grid-2">
                   <div className="form-group">
                     <label className="form-label">WhatsApp Number</label>
                     <input
@@ -917,7 +1006,7 @@ export default function ManageModal() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div className="form-grid-2">
                   <div className="form-group">
                     <label className="form-label">MoMo Number</label>
                     <input
