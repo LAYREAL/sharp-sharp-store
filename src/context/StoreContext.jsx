@@ -3,11 +3,11 @@ import { DEFAULT_STORE_SETTINGS, DEFAULT_PRODUCTS, DEFAULT_ORDERS } from '../uti
 
 const StoreContext = createContext();
 
-const SETTINGS_KEY = 'momo_store_settings_v2';
-const PRODUCTS_KEY = 'momo_store_products_v2';
-const CART_KEY = 'momo_store_cart_v2';
-const ORDERS_KEY = 'momo_store_orders_v2';
-const CLIENT_ORDERS_KEY = 'sharp_sharp_client_orders_v1';
+const SETTINGS_KEY = 'sharp_sharp_settings_v3';
+const PRODUCTS_KEY = 'sharp_sharp_products_v3';
+const CART_KEY = 'sharp_sharp_cart_v3';
+const ORDERS_KEY = 'sharp_sharp_orders_v3';
+const CLIENT_ORDERS_KEY = 'sharp_sharp_client_orders_v3';
 
 export function StoreProvider({ children }) {
   // Load Store Settings
@@ -50,7 +50,7 @@ export function StoreProvider({ children }) {
     }
   });
 
-  // Load Client Personal Orders History (Saved per device)
+  // Load Client Personal Orders History
   const [clientOrders, setClientOrders] = useState(() => {
     try {
       const saved = localStorage.getItem(CLIENT_ORDERS_KEY);
@@ -104,7 +104,7 @@ export function StoreProvider({ children }) {
     let channel;
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
-        channel = new BroadcastChannel('momo_store_live_sync');
+        channel = new BroadcastChannel('sharp_sharp_live_sync');
         channel.onmessage = (event) => {
           if (event.data && event.data.type === 'STORE_PUBLISHED') {
             const { settings, products: newProducts, orders: newOrders } = event.data.payload;
@@ -120,7 +120,7 @@ export function StoreProvider({ children }) {
               setOrders(newOrders);
               localStorage.setItem(ORDERS_KEY, JSON.stringify(newOrders));
             }
-            showNotification("⚡ Store catalog & live orders updated!");
+            showNotification("Store catalog & live orders updated!");
           }
         };
       }
@@ -206,15 +206,13 @@ export function StoreProvider({ children }) {
         name: i.name,
         price: i.price,
         quantity: i.quantity,
-        selectedSize: i.selectedSize || 'Standard',
-        emoji: i.emoji || '🛍️'
+        selectedSize: i.selectedSize || 'Standard'
       })),
       totalAmount: totalCartPrice,
       status: 'Pending Payment',
       date: new Date().toISOString()
     };
 
-    // Deduct stock automatically from products
     setProducts(prevProducts => {
       const updated = prevProducts.map(p => {
         const itemInCart = cart.find(ci => ci.id === p.id);
@@ -230,24 +228,18 @@ export function StoreProvider({ children }) {
       return updated;
     });
 
-    // Save to admin orders
     setOrders(prev => [newOrder, ...prev]);
-
-    // Save to client personal orders
     setClientOrders(prev => [newOrder, ...prev]);
-
     return newOrder;
   };
 
-  // Re-order past order items
   const reorderItems = (pastOrder) => {
     if (pastOrder && pastOrder.items) {
       pastOrder.items.forEach(item => {
         const matchingProduct = products.find(p => p.id === item.id) || {
           id: item.id,
           name: item.name,
-          price: item.price,
-          emoji: item.emoji || '🛍️'
+          price: item.price
         };
         addToCart(matchingProduct, item.selectedSize || 'Standard');
       });
@@ -265,7 +257,6 @@ export function StoreProvider({ children }) {
     setOrders(prev => prev.filter(o => o.id !== orderId));
   };
 
-  // Manage / Publishing Action
   const saveAndPublishStore = (updatedSettings, updatedProducts, updatedOrders = orders) => {
     setStoreSettings(updatedSettings);
     setProducts(updatedProducts);
@@ -277,7 +268,7 @@ export function StoreProvider({ children }) {
       localStorage.setItem(ORDERS_KEY, JSON.stringify(updatedOrders));
 
       if ('BroadcastChannel' in window) {
-        const channel = new BroadcastChannel('momo_store_live_sync');
+        const channel = new BroadcastChannel('sharp_sharp_live_sync');
         channel.postMessage({
           type: 'STORE_PUBLISHED',
           payload: {
@@ -292,7 +283,7 @@ export function StoreProvider({ children }) {
       console.error("Save & publish error", e);
     }
 
-    showNotification("🚀 SHARP SHARP published! Live updates sent to all open tabs.");
+    showNotification("SHARP SHARP published! Live updates sent to all open tabs.");
   };
 
   const value = {
