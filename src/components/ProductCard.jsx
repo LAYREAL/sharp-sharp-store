@@ -7,16 +7,11 @@ export default function ProductCard({ product }) {
   const [isAdded, setIsAdded] = useState(false);
 
   const sizesList = product.sizes && product.sizes.length > 0 ? product.sizes : ["Standard"];
-  const hasVariants = sizesList.length > 1;
+  const [selectedSize, setSelectedSize] = useState(sizesList[0]);
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
-    if (hasVariants) {
-      // Multiple sizes — open the detail view so they can choose one.
-      setSelectedProductForView(product);
-      return;
-    }
-    addToCart(product, sizesList[0]);
+    addToCart(product, selectedSize);
     setIsAdded(true);
     setTimeout(() => {
       setIsAdded(false);
@@ -56,11 +51,38 @@ export default function ProductCard({ product }) {
           <span>{product.name}</span>
         </h3>
         {product.description && <p className="product-desc">{product.description}</p>}
-        {hasVariants && (
-          <div className="size-hint" onClick={(e) => { e.stopPropagation(); setSelectedProductForView(product); }}>
-            {sizesList.length} sizes available — tap to choose
+
+        {/* Size / Variant Pills */}
+        <div style={{ margin: '0.75rem 0' }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+            Size / Variant:
           </div>
-        )}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+            {sizesList.map((sz) => (
+              <button
+                key={sz}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedSize(sz);
+                }}
+                style={{
+                  background: selectedSize === sz ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
+                  color: selectedSize === sz ? '#fff' : 'var(--text-muted)',
+                  border: selectedSize === sz ? '1px solid var(--primary)' : '1px solid var(--border-subtle)',
+                  borderRadius: '6px',
+                  padding: '0.25rem 0.6rem',
+                  fontSize: '0.775rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {sz}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="product-footer" style={{ marginTop: '0.5rem' }}>
@@ -77,11 +99,6 @@ export default function ProductCard({ product }) {
             <>
               <Check size={16} />
               <span>Added!</span>
-            </>
-          ) : hasVariants ? (
-            <>
-              <ShoppingBag size={16} />
-              <span>Choose size</span>
             </>
           ) : (
             <>

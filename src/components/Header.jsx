@@ -15,78 +15,85 @@ export default function Header() {
     setIsTutorialOpen
   } = useStore();
 
+  const pendingCount = clientOrders.filter(o =>
+    o.status === 'Pending Payment' || o.status === 'Processing'
+  ).length;
+
   return (
     <header className="store-header">
       <div className="header-content">
+        {/* Brand */}
         <div className="brand-section">
-          <div className="brand-logo">
-            <ShoppingBag size={24} color="#fff" />
-          </div>
-          <div>
-            <h1 className="brand-title">{storeSettings.storeName}</h1>
-            <p className="brand-tagline">{storeSettings.tagline}</p>
+          <div className="brand-left">
+            <div className="brand-logo">
+              <ShoppingBag size={22} color="#fff" />
+            </div>
+            <div>
+              <h1 className="brand-title">{storeSettings.storeName}</h1>
+              <p className="brand-tagline">{storeSettings.tagline}</p>
+            </div>
           </div>
         </div>
 
+        {/* Actions */}
         <div className="header-actions">
+          {/* Search */}
           <div className="search-input-wrapper">
-            <Search size={16} />
+            <Search size={15} />
             <input
+              className="search-input"
               type="text"
               placeholder="Search products..."
-              className="search-input"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <button
-            className="theme-toggle-btn"
-            onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
-          </button>
-
-          <button
-            className="btn-icon"
-            onClick={() => setIsTutorialOpen(true)}
-            title="How this store works"
-          >
-            <HelpCircle size={18} />
-          </button>
-
+          {/* My Orders */}
           <button
             className="btn-icon"
             onClick={() => setIsCustomerOrdersOpen(true)}
-            title="My Past Orders & Receipts"
+            title="My Orders"
+            style={{ position: 'relative' }}
           >
-            <Receipt size={18} />
-            <span className="hide-mobile">My Orders</span>
-            {clientOrders.length > 0 && (
-              <span
-                style={{
-                  background: 'var(--primary)',
-                  color: '#fff',
-                  fontSize: '0.7rem',
-                  fontWeight: 800,
-                  borderRadius: '9999px',
-                  padding: '0.1rem 0.4rem',
-                  marginLeft: '0.2rem'
-                }}
-              >
-                {clientOrders.length}
+            <Receipt size={16} />
+            <span style={{ display: 'none' }} className="btn-label-desktop">My Orders</span>
+            {pendingCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: -6, right: -6,
+                background: 'var(--primary)',
+                color: '#fff',
+                fontSize: '0.65rem',
+                fontWeight: 800,
+                width: 18, height: 18,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {pendingCount}
               </span>
             )}
           </button>
 
+          {/* Theme toggle */}
+          <button className="btn-icon" onClick={toggleTheme} title="Toggle theme">
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
+          {/* Tutorial */}
+          <button className="btn-icon" onClick={() => setIsTutorialOpen(true)} title="How it works">
+            <HelpCircle size={16} />
+          </button>
+
+          {/* Admin */}
           <button
             className="btn-icon"
             onClick={() => setIsManageOpen(true)}
-            title="Owner Store Settings"
+            title="Manage Store"
           >
-            <Settings size={18} />
-            <span className="hide-mobile">Manage</span>
+            <Settings size={16} />
           </button>
         </div>
       </div>

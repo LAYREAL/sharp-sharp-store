@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DEFAULT_STORE_SETTINGS, DEFAULT_PRODUCTS, DEFAULT_ORDERS } from '../utils/defaultData';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { isSupabaseConfigured } from '../lib/supabase';
 import {
-  productFromDb, productToDb,
-  settingsFromDb, settingsToDb,
-  orderFromDb, orderToDb
-} from '../lib/mappers';
+  fetchSettings, saveSettings,
+  fetchProducts, saveProducts, updateProductStock,
+  fetchOrders, addOrderToDb, updateOrderStatusInDb
+} from '../lib/db';
 
 const StoreContext = createContext();
 
@@ -18,49 +18,40 @@ const THEME_KEY = 'sharp_sharp_theme';
 const TUTORIAL_SEEN_KEY = 'sharp_sharp_seen_tutorial';
 
 export function StoreProvider({ children }) {
+  // ── Persisted State (localStorage first, then Supabase) ──────────────────
   const [storeSettings, setStoreSettings] = useState(() => {
     try {
       const saved = localStorage.getItem(SETTINGS_KEY);
       return saved ? JSON.parse(saved) : DEFAULT_STORE_SETTINGS;
-    } catch {
-      return DEFAULT_STORE_SETTINGS;
-    }
+    } catch { return DEFAULT_STORE_SETTINGS; }
   });
 
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem(PRODUCTS_KEY);
       return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
-    } catch {
-      return DEFAULT_PRODUCTS;
-    }
+    } catch { return DEFAULT_PRODUCTS; }
   });
 
   const [cart, setCart] = useState(() => {
     try {
       const saved = localStorage.getItem(CART_KEY);
       return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   });
 
   const [orders, setOrders] = useState(() => {
     try {
       const saved = localStorage.getItem(ORDERS_KEY);
       return saved ? JSON.parse(saved) : DEFAULT_ORDERS;
-    } catch {
-      return DEFAULT_ORDERS;
-    }
+    } catch { return DEFAULT_ORDERS; }
   });
 
   const [clientOrders, setClientOrders] = useState(() => {
     try {
       const saved = localStorage.getItem(CLIENT_ORDERS_KEY);
       return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   });
 
   const [theme, setTheme] = useState(() => {
@@ -71,8 +62,9 @@ export function StoreProvider({ children }) {
     try { return !localStorage.getItem(TUTORIAL_SEEN_KEY); } catch { return true; }
   });
 
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [searchQuery, setSearchQuery] = useState("");
+  // ── UI State ─────────────────────────────────────────────────────────────
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
@@ -83,6 +75,7 @@ export function StoreProvider({ children }) {
   const [publishNotification, setPublishNotification] = useState(null);
   const [isDbLoading, setIsDbLoading] = useState(isSupabaseConfigured);
 
+  // ── Theme ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
@@ -90,66 +83,42 @@ export function StoreProvider({ children }) {
 
   const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
 
+  // ── Tutorial seen ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!isTutorialOpen) {
       try { localStorage.setItem(TUTORIAL_SEEN_KEY, 'true'); } catch (e) {}
     }
   }, [isTutorialOpen]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(CART_KEY, JSON.stringify(cart));
-    } catch (e) {
-      console.error("Failed to save cart", e);
-    }
-  }, [cart]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-    } catch (e) {
-      console.error("Failed to save orders", e);
-    }
-  }, [orders]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(CLIENT_ORDERS_KEY, JSON.stringify(clientOrders));
-    } catch (e) {
-      console.error("Failed to save client orders", e);
-    }
-  }, [clientOrders]);
-
+  // ── Load from Supabase on mount ───────────────────────────────────────────
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    let cancelled = false;
 
+    let cancelled = false;
     (async () => {
       try {
-        let { data: settingsRow } = await supabase
-          .from('store_settings').select('*').eq('id', 'main').maybeSingle();
-        if (!settingsRow) {
-          await supabase.from('store_settings').insert(settingsToDb(DEFAULT_STORE_SETTINGS));
-          settingsRow = settingsToDb(DEFAULT_STORE_SETTINGS);
-        }
+        const [dbSettings, dbProducts, dbOrders] = await Promise.all([
+          fetchSettings(),
+          fetchProducts(),
+          fetchOrders()
+        ]);
 
-        let { data: productRows } = await supabase
-          .from('products').select('*').order('created_at', { ascending: true });
-        if (!productRows || productRows.length === 0) {
-          await supabase.from('products').insert(DEFAULT_PRODUCTS.map(productToDb));
-          productRows = DEFAULT_PRODUCTS.map(productToDb);
-        }
+        if (cancelled) return;
 
-        const { data: orderRows } = await supabase
-          .from('orders').select('*').order('created_at', { ascending: false });
-
-        if (!cancelled) {
-          setStoreSettings(settingsFromDb(settingsRow));
-          setProducts(productRows.map(productFromDb));
-          setOrders((orderRows || []).map(orderFromDb));
+        if (dbSettings) {
+          setStoreSettings(dbSettings);
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(dbSettings));
         }
-      } catch (err) {
-        console.error('Supabase init failed — staying on local data:', err);
+        if (dbProducts) {
+          setProducts(dbProducts);
+          localStorage.setItem(PRODUCTS_KEY, JSON.stringify(dbProducts));
+        }
+        if (dbOrders) {
+          setOrders(dbOrders);
+          localStorage.setItem(ORDERS_KEY, JSON.stringify(dbOrders));
+        }
+      } catch (e) {
+        console.warn('Supabase load error, using localStorage fallback:', e);
       } finally {
         if (!cancelled) setIsDbLoading(false);
       }
@@ -158,135 +127,69 @@ export function StoreProvider({ children }) {
     return () => { cancelled = true; };
   }, []);
 
+  // ── Persist cart to localStorage ──────────────────────────────────────────
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
+    try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {}
+  }, [cart]);
 
-    const refetchProducts = async () => {
-      const { data } = await supabase.from('products').select('*').order('created_at', { ascending: true });
-      if (data) setProducts(data.map(productFromDb));
-    };
-    const refetchOrders = async () => {
-      const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-      if (data) setOrders(data.map(orderFromDb));
-    };
-    const refetchSettings = async () => {
-      const { data } = await supabase.from('store_settings').select('*').eq('id', 'main').maybeSingle();
-      if (data) setStoreSettings(settingsFromDb(data));
-    };
+  // ── Persist orders to localStorage ───────────────────────────────────────
+  useEffect(() => {
+    try { localStorage.setItem(ORDERS_KEY, JSON.stringify(orders)); } catch (e) {}
+  }, [orders]);
 
-    const channel = supabase
-      .channel('sharp_sharp_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, refetchProducts)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, refetchOrders)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'store_settings' }, refetchSettings)
-      .subscribe();
+  // ── Persist client orders to localStorage ─────────────────────────────────
+  useEffect(() => {
+    try { localStorage.setItem(CLIENT_ORDERS_KEY, JSON.stringify(clientOrders)); } catch (e) {}
+  }, [clientOrders]);
 
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
+  // ── BroadcastChannel cross-tab sync ──────────────────────────────────────
   useEffect(() => {
     let channel;
     try {
       if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
         channel = new BroadcastChannel('sharp_sharp_live_sync');
         channel.onmessage = (event) => {
-          if (event.data && event.data.type === 'STORE_PUBLISHED') {
+          if (event.data?.type === 'STORE_PUBLISHED') {
             const { settings, products: newProducts, orders: newOrders } = event.data.payload;
-            if (settings) {
-              setStoreSettings(settings);
-              localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-            }
-            if (newProducts) {
-              setProducts(newProducts);
-              localStorage.setItem(PRODUCTS_KEY, JSON.stringify(newProducts));
-            }
-            if (newOrders) {
-              setOrders(newOrders);
-              localStorage.setItem(ORDERS_KEY, JSON.stringify(newOrders));
-            }
-            showNotification("⚡ Store catalog & live orders updated!");
+            if (settings) { setStoreSettings(settings); localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
+            if (newProducts) { setProducts(newProducts); localStorage.setItem(PRODUCTS_KEY, JSON.stringify(newProducts)); }
+            if (newOrders) { setOrders(newOrders); localStorage.setItem(ORDERS_KEY, JSON.stringify(newOrders)); }
+            showNotification('Store updated live!');
           }
         };
       }
     } catch (err) {
-      console.warn("BroadcastChannel error:", err);
+      console.warn('BroadcastChannel error:', err);
     }
-
-    return () => {
-      if (channel) channel.close();
-    };
+    return () => { if (channel) channel.close(); };
   }, []);
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const showNotification = (msg) => {
     setPublishNotification(msg);
-    setTimeout(() => {
-      setPublishNotification(null);
-    }, 4000);
+    setTimeout(() => setPublishNotification(null), 4000);
   };
 
-  // ---- Browser back button closes the top open modal instead of leaving the site ----
-  const openDepth = [
-    isTutorialOpen,
-    isCartOpen,
-    isCheckoutOpen,
-    isManageOpen,
-    isCustomerOrdersOpen,
-    Boolean(selectedProductForView),
-    Boolean(activeLightboxMedia)
-  ].filter(Boolean).length;
-  const prevOpenDepthRef = useRef(0);
+  const categories = ['All', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
-  useEffect(() => {
-    if (openDepth > prevOpenDepthRef.current) {
-      window.history.pushState({ sharpSharpModal: true }, '');
-    }
-    prevOpenDepthRef.current = openDepth;
-  }, [openDepth]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (activeLightboxMedia) { setActiveLightboxMedia(null); return; }
-      if (selectedProductForView) { setSelectedProductForView(null); return; }
-      if (isCheckoutOpen) { setIsCheckoutOpen(false); return; }
-      if (isCartOpen) { setIsCartOpen(false); return; }
-      if (isManageOpen) { setIsManageOpen(false); setIsOwnerAuthenticated(false); return; }
-      if (isCustomerOrdersOpen) { setIsCustomerOrdersOpen(false); return; }
-      if (isTutorialOpen) { setIsTutorialOpen(false); return; }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [activeLightboxMedia, selectedProductForView, isCheckoutOpen, isCartOpen, isManageOpen, isCustomerOrdersOpen, isTutorialOpen]);
-
-  const categories = ["All", ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
-
+  // ── Cart Operations ───────────────────────────────────────────────────────
   const addToCart = (product, selectedSize) => {
     setCart(prevCart => {
-      const sizeToUse = selectedSize || (product.sizes && product.sizes.length > 0 ? product.sizes[0] : 'Standard');
+      const sizeToUse = selectedSize || (product.sizes?.length > 0 ? product.sizes[0] : 'Standard');
       const cartItemId = `${product.id}_${sizeToUse}`;
-
-      const existing = prevCart.find(item => item.cartItemId === cartItemId || (item.id === product.id && item.selectedSize === sizeToUse));
+      const existing = prevCart.find(item => item.cartItemId === cartItemId);
       if (existing) {
         return prevCart.map(item =>
-          (item.cartItemId === cartItemId || (item.id === product.id && item.selectedSize === sizeToUse))
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+          item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [
-        ...prevCart,
-        {
-          ...product,
-          cartItemId,
-          selectedSize: sizeToUse,
-          quantity: 1
-        }
-      ];
+      return [...prevCart, { ...product, cartItemId, selectedSize: sizeToUse, quantity: 1 }];
     });
   };
 
   const updateCartQuantity = (cartItemId, delta) => {
-    setCart(prevCart => {
-      return prevCart
+    setCart(prevCart =>
+      prevCart
         .map(item => {
           if (item.cartItemId === cartItemId || item.id === cartItemId) {
             const newQty = item.quantity + delta;
@@ -294,21 +197,20 @@ export function StoreProvider({ children }) {
           }
           return item;
         })
-        .filter(Boolean);
-    });
+        .filter(Boolean)
+    );
   };
 
   const removeFromCart = (cartItemId) => {
     setCart(prevCart => prevCart.filter(item => item.cartItemId !== cartItemId && item.id !== cartItemId));
   };
 
-  const clearCart = () => {
-    setCart([]);
-  };
+  const clearCart = () => setCart([]);
 
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const totalCartPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const totalCartPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  // ── Orders ────────────────────────────────────────────────────────────────
   const addOrder = (orderData) => {
     const newOrder = {
       id: 'ORD-' + Math.floor(1000 + Math.random() * 9000),
@@ -328,46 +230,33 @@ export function StoreProvider({ children }) {
       date: new Date().toISOString()
     };
 
-    const updatedProducts = products.map(p => {
-      const itemInCart = cart.find(ci => ci.id === p.id);
-      if (itemInCart && p.isStockTracked) {
-        return { ...p, stock: Math.max(0, p.stock - itemInCart.quantity) };
-      }
-      return p;
+    // Deduct stock locally and update Supabase
+    setProducts(prevProducts => {
+      const updated = prevProducts.map(p => {
+        const itemInCart = cart.find(ci => ci.id === p.id);
+        if (itemInCart && p.isStockTracked) {
+          const newStock = Math.max(0, p.stock - itemInCart.quantity);
+          updateProductStock(p.id, newStock); // async, fire-and-forget
+          return { ...p, stock: newStock };
+        }
+        return p;
+      });
+      try { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(updated)); } catch (e) {}
+      return updated;
     });
-    setProducts(updatedProducts);
-    try {
-      localStorage.setItem(PRODUCTS_KEY, JSON.stringify(updatedProducts));
-    } catch (e) {}
 
     setOrders(prev => [newOrder, ...prev]);
     setClientOrders(prev => [newOrder, ...prev]);
-
-    if (isSupabaseConfigured) {
-      supabase.from('orders').insert(orderToDb(newOrder)).then(({ error }) => {
-        if (error) console.error('Order insert failed:', error);
-      });
-      cart.forEach(ci => {
-        const p = products.find(pp => pp.id === ci.id);
-        if (p && p.isStockTracked) {
-          const newStock = Math.max(0, p.stock - ci.quantity);
-          supabase.from('products').update({ stock: newStock }).eq('id', p.id).then(({ error }) => {
-            if (error) console.error('Stock update failed:', error);
-          });
-        }
-      });
-    }
+    addOrderToDb(newOrder); // async, fire-and-forget
 
     return newOrder;
   };
 
   const reorderItems = (pastOrder) => {
-    if (pastOrder && pastOrder.items) {
+    if (pastOrder?.items) {
       pastOrder.items.forEach(item => {
         const matchingProduct = products.find(p => p.id === item.id) || {
-          id: item.id,
-          name: item.name,
-          price: item.price
+          id: item.id, name: item.name, price: item.price
         };
         addToCart(matchingProduct, item.selectedSize || 'Standard');
       });
@@ -379,69 +268,52 @@ export function StoreProvider({ children }) {
   const updateOrderStatus = (orderId, newStatus) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     setClientOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-    if (isSupabaseConfigured) {
-      supabase.from('orders').update({ status: newStatus }).eq('id', orderId).then(({ error }) => {
-        if (error) console.error('Order status update failed:', error);
-      });
-    }
+    updateOrderStatusInDb(orderId, newStatus); // async, fire-and-forget
   };
 
   const deleteOrder = (orderId) => {
     setOrders(prev => prev.filter(o => o.id !== orderId));
-    if (isSupabaseConfigured) {
-      supabase.from('orders').delete().eq('id', orderId).then(({ error }) => {
-        if (error) console.error('Order delete failed:', error);
-      });
-    }
   };
 
-  const saveAndPublishStore = (updatedSettings, updatedProducts, updatedOrders = orders) => {
+  // ── Save & Publish ────────────────────────────────────────────────────────
+  const saveAndPublishStore = async (updatedSettings, updatedProducts, updatedOrders = orders) => {
     setStoreSettings(updatedSettings);
     setProducts(updatedProducts);
     setOrders(updatedOrders);
 
+    // Save to localStorage immediately
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedSettings));
       localStorage.setItem(PRODUCTS_KEY, JSON.stringify(updatedProducts));
       localStorage.setItem(ORDERS_KEY, JSON.stringify(updatedOrders));
+    } catch (e) {}
 
+    // Broadcast to other open tabs
+    try {
       if ('BroadcastChannel' in window) {
         const channel = new BroadcastChannel('sharp_sharp_live_sync');
         channel.postMessage({
           type: 'STORE_PUBLISHED',
-          payload: {
-            settings: updatedSettings,
-            products: updatedProducts,
-            orders: updatedOrders
-          }
+          payload: { settings: updatedSettings, products: updatedProducts, orders: updatedOrders }
         });
         channel.close();
       }
+    } catch (e) {}
+
+    // Save to Supabase (async)
+    try {
+      await Promise.all([
+        saveSettings(updatedSettings),
+        saveProducts(updatedProducts)
+      ]);
     } catch (e) {
-      console.error("Save & publish error", e);
+      console.warn('Supabase save error:', e);
     }
 
-    if (isSupabaseConfigured) {
-      (async () => {
-        try {
-          await supabase.from('store_settings').upsert(settingsToDb(updatedSettings), { onConflict: 'id' });
-          await supabase.from('products').delete().not('id', 'is', null);
-          if (updatedProducts.length > 0) {
-            await supabase.from('products').insert(updatedProducts.map(productToDb));
-          }
-        } catch (err) {
-          console.error('Publish to database failed:', err);
-        }
-      })();
-    }
-
-    showNotification(
-      isSupabaseConfigured
-        ? "🚀 Published to your live database — visible to every visitor, on every device."
-        : "🚀 SHARP SHARP published! Live updates sent to all open tabs on this device."
-    );
+    showNotification('SHARP SHARP published! Changes saved.');
   };
 
+  // ── Context Value ─────────────────────────────────────────────────────────
   const value = {
     storeSettings,
     products,
@@ -449,6 +321,11 @@ export function StoreProvider({ children }) {
     cart,
     orders,
     clientOrders,
+    theme,
+    toggleTheme,
+    isTutorialOpen,
+    setIsTutorialOpen,
+    isDbLoading,
     activeCategory,
     setActiveCategory,
     searchQuery,
@@ -478,13 +355,7 @@ export function StoreProvider({ children }) {
     updateOrderStatus,
     deleteOrder,
     saveAndPublishStore,
-    publishNotification,
-    theme,
-    toggleTheme,
-    isTutorialOpen,
-    setIsTutorialOpen,
-    dbConnected: isSupabaseConfigured,
-    isDbLoading
+    publishNotification
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
@@ -492,8 +363,6 @@ export function StoreProvider({ children }) {
 
 export function useStore() {
   const context = useContext(StoreContext);
-  if (!context) {
-    throw new Error('useStore must be used within a StoreProvider');
-  }
+  if (!context) throw new Error('useStore must be used within a StoreProvider');
   return context;
 }

@@ -1,15 +1,17 @@
+// Maps between Supabase DB rows (snake_case) and app objects (camelCase)
+
 export function productFromDb(row) {
   return {
     id: row.id,
     name: row.name,
-    price: Number(row.price),
-    category: row.category,
-    image: row.image,
-    media: row.media || [],
     description: row.description || '',
-    stock: row.stock,
-    isStockTracked: row.is_stock_tracked,
-    sizes: row.sizes || []
+    category: row.category || 'General',
+    price: Number(row.price),
+    stock: row.stock || 0,
+    isStockTracked: row.is_stock_tracked || false,
+    sizes: row.sizes || [],
+    image: row.image || '',
+    media: row.media || [],
   };
 }
 
@@ -17,14 +19,14 @@ export function productToDb(p) {
   return {
     id: p.id,
     name: p.name,
-    price: p.price,
-    category: p.category,
-    image: p.image,
-    media: p.media || [],
     description: p.description || '',
-    stock: p.stock,
-    is_stock_tracked: p.isStockTracked,
-    sizes: p.sizes || []
+    category: p.category || 'General',
+    price: p.price,
+    stock: p.stock || 0,
+    is_stock_tracked: p.isStockTracked || false,
+    sizes: p.sizes || [],
+    image: p.image || '',
+    media: p.media || [],
   };
 }
 
@@ -33,25 +35,25 @@ export function settingsFromDb(row) {
     storeName: row.store_name,
     tagline: row.tagline,
     whatsappNumber: row.whatsapp_number,
-    currency: row.currency,
     momoNumber: row.momo_number,
     momoName: row.momo_name,
-    momoNetwork: row.momo_network,
-    adminPin: row.admin_pin
+    momoNetwork: row.momo_network || 'MTN Mobile Money',
+    currency: row.currency,
+    adminPin: row.admin_pin,
   };
 }
 
 export function settingsToDb(s) {
   return {
-    id: 'main',
     store_name: s.storeName,
     tagline: s.tagline,
     whatsapp_number: s.whatsappNumber,
-    currency: s.currency,
     momo_number: s.momoNumber,
     momo_name: s.momoName,
-    momo_network: s.momoNetwork,
-    admin_pin: s.adminPin
+    momo_network: s.momoNetwork || 'MTN Mobile Money',
+    currency: s.currency,
+    admin_pin: s.adminPin,
+    updated_at: new Date().toISOString(),
   };
 }
 
@@ -60,12 +62,12 @@ export function orderFromDb(row) {
     id: row.id,
     customerName: row.customer_name,
     customerPhone: row.customer_phone,
-    customerAddress: row.customer_address,
+    customerAddress: row.customer_address || '',
     notes: row.notes || '',
     items: row.items || [],
     totalAmount: Number(row.total_amount),
     status: row.status,
-    date: row.created_at
+    date: row.date,
   };
 }
 
@@ -74,10 +76,11 @@ export function orderToDb(o) {
     id: o.id,
     customer_name: o.customerName,
     customer_phone: o.customerPhone,
-    customer_address: o.customerAddress,
+    customer_address: o.customerAddress || '',
     notes: o.notes || '',
     items: o.items,
     total_amount: o.totalAmount,
-    status: o.status
+    status: o.status,
+    date: o.date,
   };
 }

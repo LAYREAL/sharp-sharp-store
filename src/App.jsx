@@ -11,10 +11,10 @@ import ProductDetailModal from './components/ProductDetailModal';
 import MediaLightboxModal from './components/MediaLightboxModal';
 import CustomerOrdersModal from './components/CustomerOrdersModal';
 import WelcomeTutorial from './components/WelcomeTutorial';
-import { Radio } from 'lucide-react';
+import { Radio, Search } from 'lucide-react';
 
 function StoreMain() {
-  const { products, activeCategory, searchQuery, publishNotification } = useStore();
+  const { products, activeCategory, searchQuery, publishNotification, isDbLoading } = useStore();
 
   const filteredProducts = products.filter((product) => {
     const matchesCategory = activeCategory === 'All' || product.category === activeCategory;
@@ -45,7 +45,15 @@ function StoreMain() {
         {/* Product Grid */}
         {filteredProducts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🔎</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.05)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Search size={30} color="var(--text-muted)" />
+              </div>
+            </div>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)' }}>
               No products found
             </h3>
