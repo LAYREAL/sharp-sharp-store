@@ -10,6 +10,7 @@ import ManageModal from './components/ManageModal';
 import ProductDetailModal from './components/ProductDetailModal';
 import MediaLightboxModal from './components/MediaLightboxModal';
 import CustomerOrdersModal from './components/CustomerOrdersModal';
+import WelcomeTutorial from './components/WelcomeTutorial';
 import { Radio } from 'lucide-react';
 
 function StoreMain() {
@@ -71,6 +72,7 @@ function StoreMain() {
       <ProductDetailModal />
       <MediaLightboxModal />
       <CustomerOrdersModal />
+      <WelcomeTutorial />
     </div>
   );
 }
