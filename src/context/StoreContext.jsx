@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { DEFAULT_STORE_SETTINGS, DEFAULT_PRODUCTS, DEFAULT_ORDERS } from '../utils/defaultData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import {
@@ -223,6 +223,39 @@ export function StoreProvider({ children }) {
       setPublishNotification(null);
     }, 4000);
   };
+
+  // ---- Browser back button closes the top open modal instead of leaving the site ----
+  const openDepth = [
+    isTutorialOpen,
+    isCartOpen,
+    isCheckoutOpen,
+    isManageOpen,
+    isCustomerOrdersOpen,
+    Boolean(selectedProductForView),
+    Boolean(activeLightboxMedia)
+  ].filter(Boolean).length;
+  const prevOpenDepthRef = useRef(0);
+
+  useEffect(() => {
+    if (openDepth > prevOpenDepthRef.current) {
+      window.history.pushState({ sharpSharpModal: true }, '');
+    }
+    prevOpenDepthRef.current = openDepth;
+  }, [openDepth]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (activeLightboxMedia) { setActiveLightboxMedia(null); return; }
+      if (selectedProductForView) { setSelectedProductForView(null); return; }
+      if (isCheckoutOpen) { setIsCheckoutOpen(false); return; }
+      if (isCartOpen) { setIsCartOpen(false); return; }
+      if (isManageOpen) { setIsManageOpen(false); setIsOwnerAuthenticated(false); return; }
+      if (isCustomerOrdersOpen) { setIsCustomerOrdersOpen(false); return; }
+      if (isTutorialOpen) { setIsTutorialOpen(false); return; }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeLightboxMedia, selectedProductForView, isCheckoutOpen, isCartOpen, isManageOpen, isCustomerOrdersOpen, isTutorialOpen]);
 
   const categories = ["All", ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
 
