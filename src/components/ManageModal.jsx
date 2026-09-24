@@ -34,7 +34,9 @@ export default function ManageModal() {
     updateOrderStatus,
     saveAndPublishStore,
     isOwnerAuthenticated,
-    setIsOwnerAuthenticated
+    setIsOwnerAuthenticated,
+    dbConnected,
+    isDbLoading
   } = useStore();
 
   const [activeTab, setActiveTab] = useState('orders');
@@ -446,7 +448,7 @@ export default function ManageModal() {
                             <button
                               type="button"
                               className="btn-icon"
-                              style={{ background: 'rgba(99, 102, 241, 0.2)', borderColor: 'var(--primary)', color: '#fff', padding: '0.3rem 0.6rem' }}
+                              style={{ background: 'var(--primary)', borderColor: 'var(--primary)', color: '#fff', padding: '0.3rem 0.6rem' }}
                               onClick={() => printInvoice(ord, editSettings)}
                               title="Generate Printable Invoice"
                             >
@@ -457,7 +459,7 @@ export default function ManageModal() {
                             <button
                               type="button"
                               className="btn-icon"
-                              style={{ background: 'rgba(34, 197, 94, 0.2)', borderColor: 'var(--accent-whatsapp)', color: '#fff', padding: '0.3rem 0.6rem' }}
+                              style={{ background: 'var(--accent-whatsapp)', borderColor: 'var(--accent-whatsapp)', color: '#fff', padding: '0.3rem 0.6rem' }}
                               onClick={() => handleSendInvoiceWhatsApp(ord)}
                               title="Send confirmed invoice directly to customer on WhatsApp"
                             >
@@ -482,7 +484,7 @@ export default function ManageModal() {
                               </strong>
                             </div>
                           ))}
-                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '0.35rem', paddingTop: '0.35rem', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: '#fff' }}>
+                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '0.35rem', paddingTop: '0.35rem', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: 'var(--text-main)' }}>
                             <span>Total Amount:</span>
                             <span>{editSettings.currency} {ord.totalAmount.toLocaleString()}</span>
                           </div>
@@ -522,7 +524,7 @@ export default function ManageModal() {
                 {editingProduct && (
                   <form onSubmit={handleSaveProductEdit} style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid var(--primary)', padding: '1rem', borderRadius: '12px', marginBottom: '1.25rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <h5 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <h5 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <Edit size={16} color="var(--primary)" />
                         <span>Edit Product: "{editingProduct.name}"</span>
                       </h5>
@@ -539,7 +541,7 @@ export default function ManageModal() {
                       <div className="form-grid-2" style={{ marginBottom: '0.5rem' }}>
                         <label
                           style={{
-                            background: 'rgba(99, 102, 241, 0.2)',
+                            background: 'rgba(99, 102, 241, 0.85)',
                             border: '1px dashed var(--primary)',
                             borderRadius: '8px',
                             padding: '0.65rem',
@@ -707,7 +709,7 @@ export default function ManageModal() {
                       <div className="form-grid-2" style={{ marginBottom: '0.5rem' }}>
                         <label
                           style={{
-                            background: 'rgba(99, 102, 241, 0.15)',
+                            background: 'rgba(99, 102, 241, 0.85)',
                             border: '1px dashed var(--primary)',
                             borderRadius: '8px',
                             padding: '0.65rem',
@@ -893,7 +895,7 @@ export default function ManageModal() {
 
                       <button
                         className="btn-icon"
-                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.775rem', background: 'rgba(99, 102, 241, 0.2)', borderColor: 'var(--primary)', color: '#fff' }}
+                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.775rem', background: 'var(--primary)', borderColor: 'var(--primary)', color: '#fff' }}
                         onClick={() => startEditingProduct(p)}
                         title="Edit published item details"
                       >
@@ -926,6 +928,21 @@ export default function ManageModal() {
             {/* TAB 3: STORE SETTINGS */}
             {activeTab === 'settings' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                <div
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    background: dbConnected ? 'rgba(34, 197, 94, 0.1)' : 'rgba(148, 163, 184, 0.1)',
+                    border: `1px solid ${dbConnected ? 'rgba(34, 197, 94, 0.3)' : 'var(--border-subtle)'}`,
+                    borderRadius: 'var(--radius-md)', padding: '0.6rem 0.85rem', fontSize: '0.8rem',
+                    color: dbConnected ? '#4ade80' : 'var(--text-muted)'
+                  }}
+                >
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: dbConnected ? '#4ade80' : '#94a3b8', flexShrink: 0 }} />
+                  {dbConnected
+                    ? (isDbLoading ? 'Connecting to your live database…' : 'Live database connected — synced across every device.')
+                    : 'No database connected yet — data is only saved on this device/browser.'}
+                </div>
+
                 {(!storeSettings.adminPin || storeSettings.adminPin === '1234') && (
                   <div className="pin-default-notice">
                     ⚠️ You're still on the starter PIN. Set a personal PIN below before sharing this link.
