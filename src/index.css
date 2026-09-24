@@ -221,7 +221,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(11, 15, 25, 0.9);
+  background: var(--bg-glass);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
@@ -609,7 +609,7 @@ body {
 .product-price {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-main);
 }
 
 @media (min-width: 640px) {
@@ -763,7 +763,9 @@ body {
 }
 
 .modal-content {
-  background: #0f172a;
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-subtle);
   border-top-left-radius: var(--radius-lg);
   border-top-right-radius: var(--radius-lg);
@@ -829,8 +831,8 @@ body {
 }
 
 .btn-close:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+  background: rgba(148, 163, 184, 0.18);
 }
 
 /* Form controls */
