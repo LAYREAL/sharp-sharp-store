@@ -11,6 +11,7 @@ import ProductDetailModal from './components/ProductDetailModal';
 import MediaLightboxModal from './components/MediaLightboxModal';
 import CustomerOrdersModal from './components/CustomerOrdersModal';
 import WelcomeTutorial from './components/WelcomeTutorial';
+import Sidebar from './components/Sidebar';
 import { Radio, Search } from 'lucide-react';
 
 function StoreMain() {
@@ -81,6 +82,7 @@ function StoreMain() {
       <MediaLightboxModal />
       <CustomerOrdersModal />
       <WelcomeTutorial />
+      <Sidebar />
     </div>
   );
 }

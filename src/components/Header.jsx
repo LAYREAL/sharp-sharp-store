@@ -1,18 +1,15 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { Search, Settings, ShoppingBag, Receipt, Sun, Moon, HelpCircle } from 'lucide-react';
+import { Menu, Search, ShoppingBag, Receipt, X } from 'lucide-react';
 
 export default function Header() {
   const {
     storeSettings,
     searchQuery,
     setSearchQuery,
-    setIsManageOpen,
+    setIsSidebarOpen,
     setIsCustomerOrdersOpen,
-    clientOrders,
-    theme,
-    toggleTheme,
-    setIsTutorialOpen
+    clientOrders
   } = useStore();
 
   const pendingCount = clientOrders.filter(o =>
@@ -22,79 +19,72 @@ export default function Header() {
   return (
     <header className="store-header">
       <div className="header-content">
-        {/* Brand */}
+        {/* Top Bar: Hamburger on top-left, Brand in center-left, Orders shortcut on right */}
         <div className="brand-section">
           <div className="brand-left">
+            {/* Top-Left Hamburger Menu Button */}
+            <button
+              type="button"
+              className="btn-hamburger"
+              onClick={() => setIsSidebarOpen(true)}
+              aria-label="Open menu"
+              title="Open menu"
+            >
+              <Menu size={22} />
+            </button>
+
             <div className="brand-logo">
-              <ShoppingBag size={22} color="#fff" />
+              <ShoppingBag size={20} color="#fff" />
             </div>
+
             <div>
               <h1 className="brand-title">{storeSettings.storeName}</h1>
               <p className="brand-tagline">{storeSettings.tagline}</p>
             </div>
           </div>
+
+          {/* Top-Right Quick Orders Shortcut */}
+          <div className="brand-actions-group">
+            <button
+              type="button"
+              className="btn-icon"
+              onClick={() => setIsCustomerOrdersOpen(true)}
+              title="My Orders"
+              style={{ position: 'relative' }}
+            >
+              <Receipt size={16} />
+              <span className="btn-label-desktop">Orders</span>
+              {pendingCount > 0 && (
+                <span className="badge-counter">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="header-actions">
-          {/* Search */}
+        {/* Full-width, uncrowded Search Bar */}
+        <div className="search-bar-container">
           <div className="search-input-wrapper">
             <Search size={15} />
             <input
               className="search-input"
               type="text"
-              placeholder="Search products..."
+              placeholder="Search products, shoes, watches..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
-          </div>
-
-          {/* My Orders */}
-          <button
-            className="btn-icon"
-            onClick={() => setIsCustomerOrdersOpen(true)}
-            title="My Orders"
-            style={{ position: 'relative' }}
-          >
-            <Receipt size={16} />
-            <span style={{ display: 'none' }} className="btn-label-desktop">My Orders</span>
-            {pendingCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: -6, right: -6,
-                background: 'var(--primary)',
-                color: '#fff',
-                fontSize: '0.65rem',
-                fontWeight: 800,
-                width: 18, height: 18,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                {pendingCount}
-              </span>
+            {searchQuery && (
+              <button
+                type="button"
+                className="btn-clear-search"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                <X size={14} />
+              </button>
             )}
-          </button>
-
-          {/* Theme toggle */}
-          <button className="btn-icon" onClick={toggleTheme} title="Toggle theme">
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-
-          {/* Tutorial */}
-          <button className="btn-icon" onClick={() => setIsTutorialOpen(true)} title="How it works">
-            <HelpCircle size={16} />
-          </button>
-
-          {/* Admin */}
-          <button
-            className="btn-icon"
-            onClick={() => setIsManageOpen(true)}
-            title="Manage Store"
-          >
-            <Settings size={16} />
-          </button>
+          </div>
         </div>
       </div>
     </header>

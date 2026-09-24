@@ -1,26 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { printInvoice } from '../utils/invoiceGenerator';
 import { generateCustomerInvoiceWhatsAppLink } from '../utils/whatsappFormatter';
 import {
   X,
+  ArrowLeft,
   Settings,
   Package,
   Plus,
   Trash2,
   Save,
   Lock,
+  KeyRound,
   Receipt,
   FileText,
   Upload,
   Image as ImageIcon,
-  Video as VideoIcon,
   Play,
   Edit,
   Check,
   MessageSquare,
-  Sparkles,
-  Rocket
+  AlertCircle,
+  User,
+  MapPin
 } from 'lucide-react';
 
 export default function ManageModal() {
@@ -32,6 +34,7 @@ export default function ManageModal() {
     categories,
     orders,
     updateOrderStatus,
+    deleteOrder,
     saveAndPublishStore,
     isOwnerAuthenticated,
     setIsOwnerAuthenticated
@@ -46,34 +49,61 @@ export default function ManageModal() {
   const [editProducts, setEditProducts] = useState([...products]);
   const [editOrders, setEditOrders] = useState([...orders]);
 
-  React.useEffect(() => {
-    if (isManageOpen) {
-      setEditSettings({ ...storeSettings });
-      setEditProducts([...products]);
-      setEditOrders([...orders]);
-    }
-  }, [isManageOpen, storeSettings, products, orders]);
+  // PIN Change draft state
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmNewPinInput, setConfirmNewPinInput] = useState('');
+  const [pinChangeError, setPinChangeError] = useState('');
+  const [pinChangeSuccess, setPinChangeSuccess] = useState('');
 
-  // Add new product form draft state
-  const [newItem, setNewItem] = useState({
-    name: '',
-    price: '',
-    category: '',
-    customCategory: '',
-    image: '',
-    media: [],
-    description: '',
-    stock: 10,
-    isStockTracked: true,
-    sizesRaw: 'S, M, L, XL'
-  });
-
+  // Subview states
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [mediaError, setMediaError] = useState('');
 
+  // Sync draft states when modal opens
+  useEffect(() => {
+    if (isManageOpen) {
+      setEditSettings({ ...storeSettings });
+      setEditProducts([...products]);
+      setEditOrders([...orders]);
+      setPinChangeError('');
+      setPinChangeSuccess('');
+      setCurrentPinInput('');
+      setNewPinInput('');
+      setConfirmNewPinInput('');
+    }
+  }, [isManageOpen, storeSettings, products, orders]);
+
+  // Listen to popstate for subviews (editing or adding product)
+  useEffect(() => {
+    const handlePop = () => {
+      if (editingProduct) {
+        setEditingProduct(null);
+      } else if (showAddForm) {
+        setShowAddForm(false);
+      }
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [editingProduct, showAddForm]);
+
   if (!isManageOpen) return null;
 
+  // ── Navigation Back Button Handler ─────────────────────────────────────────
+  const handleBackNavigation = () => {
+    if (editingProduct || showAddForm) {
+      setEditingProduct(null);
+      setShowAddForm(false);
+      if (window.history.state?.modal === 'manage-subview') {
+        window.history.back();
+      }
+    } else {
+      setIsManageOpen(false);
+    }
+  };
+
+  // ── Authentication ────────────────────────────────────────────────────────
   const handlePinSubmit = (e) => {
     e.preventDefault();
     if (pinInput === (storeSettings.adminPin || '1234')) {
@@ -84,11 +114,44 @@ export default function ManageModal() {
     }
   };
 
+  // ── Save & Publish ────────────────────────────────────────────────────────
   const handlePublish = () => {
     saveAndPublishStore(editSettings, editProducts, editOrders);
     setIsManageOpen(false);
   };
 
+  // ── PIN Change Handler ────────────────────────────────────────────────────
+  const handleUpdatePin = () => {
+    setPinChangeError('');
+    setPinChangeSuccess('');
+
+    const existingPin = editSettings.adminPin || storeSettings.adminPin || '1234';
+
+    if (!currentPinInput) {
+      setPinChangeError('Please enter your existing PIN to confirm your identity.');
+      return;
+    }
+    if (currentPinInput !== existingPin) {
+      setPinChangeError('Existing PIN is incorrect. Please enter the current PIN.');
+      return;
+    }
+    if (!newPinInput || newPinInput.length < 4) {
+      setPinChangeError('New PIN must be at least 4 digits.');
+      return;
+    }
+    if (newPinInput !== confirmNewPinInput) {
+      setPinChangeError('New PIN and Confirm PIN do not match.');
+      return;
+    }
+
+    setEditSettings(prev => ({ ...prev, adminPin: newPinInput }));
+    setPinChangeSuccess('New PIN set! Click "Save & Publish" below to permanently save.');
+    setCurrentPinInput('');
+    setNewPinInput('');
+    setConfirmNewPinInput('');
+  };
+
+  // ── Catalog Management ────────────────────────────────────────────────────
   const handleDeleteProduct = (productId) => {
     setEditProducts(prev => prev.filter(p => p.id !== productId));
     if (editingProduct && editingProduct.id === productId) {
@@ -108,25 +171,40 @@ export default function ManageModal() {
     );
   };
 
+  const startEditingProduct = (product) => {
+    setEditingProduct({
+      ...product,
+      sizesRaw: product.sizes ? product.sizes.join(', ') : 'Standard',
+      customCategory: ''
+    });
+    setShowAddForm(false);
+    try {
+      window.history.pushState({ modal: 'manage-subview' }, '');
+    } catch (e) {}
+  };
+
+  const startAddingProduct = () => {
+    setShowAddForm(true);
+    setEditingProduct(null);
+    try {
+      window.history.pushState({ modal: 'manage-subview' }, '');
+    } catch (e) {}
+  };
+
   const handleMediaFileUpload = (e, isEditingMode = false) => {
     setMediaError('');
     const file = e.target.files && e.target.files[0];
     if (!file) return;
 
     const isVideo = file.type.startsWith('video/');
-
     if (isVideo && file.size > 5 * 1024 * 1024) {
-      setMediaError(`Video file "${file.name}" exceeds the 5MB limit! (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please pick a clip under 5MB.`);
+      setMediaError(`Video exceeds 5MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please choose a smaller clip.`);
       return;
     }
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      const mediaItem = {
-        type: isVideo ? 'video' : 'image',
-        url: reader.result
-      };
-
+      const mediaItem = { type: isVideo ? 'video' : 'image', url: reader.result };
       if (isEditingMode && editingProduct) {
         setEditingProduct(prev => {
           const updatedMedia = [...(prev.media || []), mediaItem];
@@ -174,6 +252,20 @@ export default function ManageModal() {
     }
   };
 
+  // Add Item Draft State
+  const [newItem, setNewItem] = useState({
+    name: '',
+    price: '',
+    category: '',
+    customCategory: '',
+    image: '',
+    media: [],
+    description: '',
+    stock: 10,
+    isStockTracked: true,
+    sizesRaw: 'Standard'
+  });
+
   const handleAddProduct = (e) => {
     e.preventDefault();
     const finalCategory = newItem.category === 'NEW_CATEGORY' || !newItem.category
@@ -198,7 +290,6 @@ export default function ManageModal() {
     };
 
     setEditProducts(prev => [productToAdd, ...prev]);
-
     setNewItem({
       name: '',
       price: '',
@@ -209,16 +300,7 @@ export default function ManageModal() {
       description: '',
       stock: 10,
       isStockTracked: true,
-      sizesRaw: 'S, M, L, XL'
-    });
-    setShowAddForm(false);
-  };
-
-  const startEditingProduct = (product) => {
-    setEditingProduct({
-      ...product,
-      sizesRaw: product.sizes ? product.sizes.join(', ') : 'Standard',
-      customCategory: ''
+      sizesRaw: 'Standard'
     });
     setShowAddForm(false);
   };
@@ -248,6 +330,7 @@ export default function ManageModal() {
     setEditingProduct(null);
   };
 
+  // ── Orders Management ─────────────────────────────────────────────────────
   const handleStatusChange = (orderId, newStatus) => {
     setEditOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     updateOrderStatus(orderId, newStatus);
@@ -258,59 +341,103 @@ export default function ManageModal() {
     window.open(waUrl, '_blank');
   };
 
+  const handleDeleteOrder = (orderId) => {
+    if (window.confirm('Are you sure you want to delete this order?')) {
+      setEditOrders(prev => prev.filter(o => o.id !== orderId));
+      deleteOrder(orderId);
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={() => setIsManageOpen(false)}>
-      <div className="modal-content" style={{ maxWidth: '760px' }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">
-            <Settings size={20} color="var(--primary)" />
-            <span>SHARP SHARP - Admin Control Panel</span>
+      <div
+        className="modal-content manage-modal-container"
+        style={{ maxWidth: '780px' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Top Header with Dynamic Back Button */}
+        <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={handleBackNavigation}
+            title="Go back"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.85rem' }}
+          >
+            <ArrowLeft size={16} />
+            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>
+              {editingProduct || showAddForm ? 'Catalog' : 'Store'}
+            </span>
+          </button>
+
+          <h2 className="modal-title" style={{ fontSize: '1.05rem', margin: '0 0.5rem', textAlign: 'center', flex: 1 }}>
+            <Settings size={18} color="var(--primary)" />
+            <span>Admin Control Panel</span>
           </h2>
-          <button className="btn-close" onClick={() => setIsManageOpen(false)}>
+
+          <button
+            className="btn-close"
+            onClick={() => setIsManageOpen(false)}
+            title="Close"
+          >
             <X size={18} />
           </button>
         </div>
 
+        {/* PIN Screen */}
         {!isOwnerAuthenticated ? (
-          <form onSubmit={handlePinSubmit} style={{ padding: '1rem 0' }}>
-            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-              <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'center' }}>
-                <Lock size={40} color="var(--primary)" />
+          <form onSubmit={handlePinSubmit} style={{ padding: '1.5rem 0' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: 'rgba(99, 102, 241, 0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 0.75rem',
+                border: '1px solid var(--border-active)'
+              }}>
+                <Lock size={32} color="var(--primary)" />
               </div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Owner Authentication</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Owner Authentication</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
                 Enter your owner PIN to manage SHARP SHARP store settings, orders & stock. (Default: 1234)
               </p>
             </div>
 
             {pinError && (
-              <div style={{ color: '#f87171', fontSize: '0.85rem', textAlign: 'center', marginBottom: '0.85rem' }}>
+              <div style={{ color: '#f87171', fontSize: '0.85rem', textAlign: 'center', marginBottom: '1rem', fontWeight: 600 }}>
                 {pinError}
               </div>
             )}
 
-            <div className="form-group">
+            <div className="form-group" style={{ maxWidth: 320, margin: '0 auto 1.25rem' }}>
               <input
                 type="password"
                 className="form-input"
-                placeholder="Enter 4-digit PIN (1234)"
+                style={{ textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.3em', padding: '0.75rem' }}
+                placeholder="PIN"
+                maxLength={10}
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
                 autoFocus
               />
             </div>
 
-            <button type="submit" className="btn-publish" style={{ marginTop: '0.5rem' }}>
+            <button
+              type="submit"
+              className="btn-publish"
+              style={{ maxWidth: 320, margin: '0 auto', display: 'flex', justifyContent: 'center' }}
+            >
               <Lock size={16} />
               <span>Unlock Admin Panel</span>
             </button>
           </form>
         ) : (
           <>
-            <div className="manage-tabs">
+            {/* Navigation Tabs */}
+            <div className="manage-tabs" style={{ display: 'flex', gap: '0.35rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
               <button
                 className={`manage-tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
-                onClick={() => setActiveTab('orders')}
+                onClick={() => { setActiveTab('orders'); setEditingProduct(null); setShowAddForm(false); }}
               >
                 <Receipt size={16} />
                 <span>Orders ({editOrders.length})</span>
@@ -318,39 +445,39 @@ export default function ManageModal() {
 
               <button
                 className={`manage-tab-btn ${activeTab === 'products' ? 'active' : ''}`}
-                onClick={() => setActiveTab('products')}
+                onClick={() => { setActiveTab('products'); }}
               >
                 <Package size={16} />
-                <span>Catalog & Media ({editProducts.length})</span>
+                <span>Catalog ({editProducts.length})</span>
               </button>
 
               <button
                 className={`manage-tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
-                onClick={() => setActiveTab('settings')}
+                onClick={() => { setActiveTab('settings'); setEditingProduct(null); setShowAddForm(false); }}
               >
                 <Settings size={16} />
                 <span>Store Settings</span>
               </button>
             </div>
 
-            {/* TAB 1: ORDERS & SALES TRACKING */}
+            {/* TAB 1: ORDERS */}
             {activeTab === 'orders' && (
               <div>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Customer Sales & Order History</span>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Total Orders: {editOrders.length}</span>
-                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Customer Orders History</h4>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Total: {editOrders.length}</span>
+                </div>
 
                 {editOrders.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
-                    <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'center' }}>
-                      <Receipt size={40} color="var(--text-dim)" />
+                  <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+                    <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
+                      <Receipt size={32} color="var(--text-dim)" />
                     </div>
                     <p style={{ fontWeight: 700 }}>No orders recorded yet</p>
-                    <p style={{ fontSize: '0.85rem' }}>When customers order on WhatsApp, their records will automatically log here.</p>
+                    <p style={{ fontSize: '0.85rem', marginTop: '0.25rem' }}>When customers order, their records will automatically log here.</p>
                   </div>
                 ) : (
-                  <div style={{ maxHeight: '380px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  <div style={{ maxHeight: '420px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {editOrders.map((ord) => (
                       <div
                         key={ord.id}
@@ -358,13 +485,14 @@ export default function ManageModal() {
                           background: 'rgba(255, 255, 255, 0.03)',
                           border: '1px solid var(--border-subtle)',
                           borderRadius: '12px',
-                          padding: '1rem',
+                          padding: '0.85rem',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '0.5rem'
+                          gap: '0.6rem'
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {/* Order Header */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.4rem' }}>
                           <div>
                             <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.95rem' }}>{ord.id}</span>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
@@ -372,7 +500,7 @@ export default function ManageModal() {
                             </span>
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                             <select
                               value={ord.status}
                               onChange={(e) => handleStatusChange(ord.id, e.target.value)}
@@ -381,7 +509,7 @@ export default function ManageModal() {
                                 color: ord.status === 'Paid' ? '#4ade80' : ord.status === 'Fulfilled' ? '#a5b4fc' : '#fbbf24',
                                 border: '1px solid var(--border-subtle)',
                                 borderRadius: '6px',
-                                padding: '0.25rem 0.5rem',
+                                padding: '0.3rem 0.5rem',
                                 fontSize: '0.775rem',
                                 fontWeight: 700
                               }}
@@ -397,41 +525,61 @@ export default function ManageModal() {
                               className="btn-icon"
                               style={{ background: 'rgba(99, 102, 241, 0.2)', borderColor: 'var(--primary)', color: '#fff', padding: '0.3rem 0.6rem' }}
                               onClick={() => printInvoice(ord, editSettings)}
-                              title="Generate Printable Invoice"
+                              title="Print Invoice"
                             >
-                              <FileText size={14} />
+                              <FileText size={13} />
                               <span style={{ fontSize: '0.75rem' }}>Print</span>
                             </button>
 
                             <button
                               type="button"
                               className="btn-icon"
-                              style={{ background: 'rgba(34, 197, 94, 0.2)', borderColor: 'var(--accent-whatsapp)', color: '#fff', padding: '0.3rem 0.6rem' }}
+                              style={{ background: 'rgba(34, 197, 94, 0.2)', borderColor: 'var(--accent-whatsapp)', color: '#4ade80', padding: '0.3rem 0.6rem' }}
                               onClick={() => handleSendInvoiceWhatsApp(ord)}
-                              title="Send confirmed invoice directly to customer on WhatsApp"
+                              title="Send WhatsApp confirmation"
                             >
-                              <MessageSquare size={14} color="#4ade80" />
-                              <span style={{ fontSize: '0.75rem', color: '#4ade80' }}>WhatsApp</span>
+                              <MessageSquare size={13} />
+                              <span style={{ fontSize: '0.75rem' }}>WhatsApp</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              className="btn-close"
+                              style={{ width: 28, height: 28 }}
+                              onClick={() => handleDeleteOrder(ord.id)}
+                              title="Delete Order"
+                            >
+                              <Trash2 size={13} color="#f87171" />
                             </button>
                           </div>
                         </div>
 
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>
-                          👤 <strong>{ord.customerName}</strong> ({ord.customerPhone}) • 📍 {ord.customerAddress}
+                        {/* Customer Info (Zero Emojis, clean icons) */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.825rem', color: 'var(--text-main)', background: 'rgba(255,255,255,0.02)', padding: '0.4rem 0.6rem', borderRadius: '8px' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <User size={13} color="var(--primary)" />
+                            <strong>{ord.customerName}</strong>
+                          </span>
+                          <span style={{ color: 'var(--text-muted)' }}>({ord.customerPhone})</span>
+                          {ord.customerAddress && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: 'var(--text-muted)' }}>
+                              <MapPin size={13} color="var(--accent-momo)" />
+                              {ord.customerAddress}
+                            </span>
+                          )}
                         </div>
 
-                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem' }}>
+                        {/* Items breakdown */}
+                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem' }}>
                           {ord.items.map((it, i) => (
                             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', margin: '0.2rem 0' }}>
-                              <span>
-                                • {it.quantity}x {it.name} {it.selectedSize ? `[Size: ${it.selectedSize}]` : ''}
-                              </span>
+                              <span>• {it.quantity}x {it.name} {it.selectedSize ? `[${it.selectedSize}]` : ''}</span>
                               <strong style={{ color: 'var(--text-muted)' }}>
                                 {editSettings.currency} {(it.price * it.quantity).toLocaleString()}
                               </strong>
                             </div>
                           ))}
-                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '0.35rem', paddingTop: '0.35rem', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: '#fff' }}>
+                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '0.35rem', paddingTop: '0.35rem', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: '#fff' }}>
                             <span>Total Amount:</span>
                             <span>{editSettings.currency} {ord.totalAmount.toLocaleString()}</span>
                           </div>
@@ -443,92 +591,69 @@ export default function ManageModal() {
               </div>
             )}
 
-            {/* TAB 2: PRODUCTS CATALOG & MEDIA */}
+            {/* TAB 2: CATALOG & MEDIA */}
             {activeTab === 'products' && (
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700 }}>Catalog & Media Manager</h4>
-                  <button
-                    className="btn-icon"
-                    onClick={() => {
-                      setShowAddForm(!showAddForm);
-                      setEditingProduct(null);
-                    }}
-                    style={{ background: 'var(--primary)', borderColor: 'transparent', color: '#fff' }}
-                  >
-                    <Plus size={16} />
-                    <span>{showAddForm ? 'Cancel' : 'Add New Item'}</span>
-                  </button>
-                </div>
+                {/* Top action bar */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                  <h4 style={{ fontSize: '0.95rem', fontWeight: 700 }}>
+                    {editingProduct ? 'Edit Product' : showAddForm ? 'Add New Product' : 'Catalog Manager'}
+                  </h4>
 
-                {mediaError && (
-                  <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '0.6rem 0.8rem', borderRadius: '8px', fontSize: '0.825rem', marginBottom: '0.85rem', fontWeight: 600 }}>
-                    {mediaError}
-                  </div>
-                )}
+                  {!editingProduct && !showAddForm && (
+                    <button
+                      type="button"
+                      className="btn-add-cart"
+                      style={{ padding: '0.45rem 0.85rem', fontSize: '0.8rem' }}
+                      onClick={startAddingProduct}
+                    >
+                      <Plus size={15} />
+                      <span>Add Product</span>
+                    </button>
+                  )}
+                </div>
 
                 {/* EDIT PRODUCT FORM */}
                 {editingProduct && (
-                  <form onSubmit={handleSaveProductEdit} style={{ background: 'rgba(99, 102, 241, 0.08)', border: '1px solid var(--primary)', padding: '1rem', borderRadius: '12px', marginBottom: '1.25rem' }}>
+                  <form onSubmit={handleSaveProductEdit} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-active)', padding: '1rem', borderRadius: '12px', marginBottom: '1.25rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <h5 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Edit size={16} color="var(--primary)" />
-                        <span>Edit Product: "{editingProduct.name}"</span>
-                      </h5>
-                      <button type="button" className="btn-close" style={{ width: '26px', height: '26px' }} onClick={() => setEditingProduct(null)}>
-                        <X size={14} />
+                      <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)' }}>Editing: {editingProduct.name}</span>
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                        onClick={() => setEditingProduct(null)}
+                      >
+                        Cancel
                       </button>
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: '1rem' }}>
+                    {mediaError && (
+                      <div style={{ color: '#f87171', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>
+                        {mediaError}
+                      </div>
+                    )}
+
+                    <div className="form-group" style={{ marginBottom: '0.85rem' }}>
                       <label className="form-label">
                         <ImageIcon size={14} />
-                        <span>Update Photos & Videos (Videos max 5MB)</span>
+                        <span>Photos & Videos (Video limit 5MB)</span>
                       </label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <label
-                          style={{
-                            background: 'rgba(99, 102, 241, 0.2)',
-                            border: '1px dashed var(--primary)',
-                            borderRadius: '8px',
-                            padding: '0.65rem',
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            fontSize: '0.825rem',
-                            fontWeight: 700,
-                            color: '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.4rem'
-                          }}
-                        >
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem' }}>
+                        <label style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px dashed var(--primary)', borderRadius: '8px', padding: '0.65rem', textAlign: 'center', cursor: 'pointer', fontSize: '0.825rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
                           <Upload size={14} />
-                          <span>Add Photo / Video</span>
-                          <input
-                            type="file"
-                            accept="image/*,video/mp4,video/webm"
-                            onChange={(e) => handleMediaFileUpload(e, true)}
-                            style={{ display: 'none' }}
-                          />
+                          <span>Upload Photo / Video</span>
+                          <input type="file" accept="image/*,video/mp4,video/webm" onChange={(e) => handleMediaFileUpload(e, true)} style={{ display: 'none' }} />
                         </label>
-
-                        <input
-                          type="url"
-                          className="form-input"
-                          placeholder="Or paste https:// media link..."
-                          value={editingProduct.image || ''}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                        />
                       </div>
 
                       {editingProduct.media && editingProduct.media.length > 0 && (
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                           {editingProduct.media.map((med, idx) => (
-                            <div key={idx} style={{ position: 'relative', width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#000' }}>
+                            <div key={idx} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#000' }}>
                               {med.type === 'video' ? (
                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e1b4b', color: '#fff' }}>
-                                  <Play size={20} />
+                                  <Play size={18} />
                                 </div>
                               ) : (
                                 <img src={med.url} alt="media" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -536,7 +661,7 @@ export default function ManageModal() {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveMediaItem(idx, true)}
-                                style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(0,0,0,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '0.7rem' }}
+                                style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(0,0,0,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', cursor: 'pointer', fontSize: '0.65rem' }}
                               >
                                 ✕
                               </button>
@@ -580,18 +705,8 @@ export default function ManageModal() {
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Full Item Description</label>
-                      <textarea
-                        className="form-textarea"
-                        rows="2"
-                        value={editingProduct.description || ''}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Available Sizes / Variants (comma separated)</label>
+                    <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                      <label className="form-label">Sizes / Variants (comma separated)</label>
                       <input
                         type="text"
                         className="form-input"
@@ -600,37 +715,10 @@ export default function ManageModal() {
                       />
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Category *</label>
-                      <select
-                        className="form-select"
-                        value={editingProduct.category}
-                        onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
-                      >
-                        {categories.filter(c => c !== 'All').map(c => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                        <option value="NEW_CATEGORY">+ Create New Category</option>
-                      </select>
-                    </div>
-
-                    {editingProduct.category === 'NEW_CATEGORY' && (
-                      <div className="form-group">
-                        <label className="form-label">New Category Name</label>
-                        <input
-                          type="text"
-                          className="form-input"
-                          placeholder="e.g. Watches"
-                          value={editingProduct.customCategory || ''}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, customCategory: e.target.value })}
-                        />
-                      </div>
-                    )}
-
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
                       <button type="submit" className="btn-publish" style={{ flex: 1, margin: 0 }}>
                         <Check size={16} />
-                        <span>Update Product Changes</span>
+                        <span>Save Changes</span>
                       </button>
                       <button
                         type="button"
@@ -646,64 +734,36 @@ export default function ManageModal() {
                 {/* ADD NEW PRODUCT FORM */}
                 {showAddForm && !editingProduct && (
                   <form onSubmit={handleAddProduct} style={{ background: 'rgba(255,255,255,0.03)', border: '1px dashed var(--primary)', padding: '1rem', borderRadius: '12px', marginBottom: '1.25rem' }}>
-                    <h5 style={{ fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--primary)' }}>Add New Product</h5>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <h5 style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 800 }}>Create New Product</h5>
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
+                        onClick={() => setShowAddForm(false)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
 
-                    <div className="form-group" style={{ marginBottom: '1rem' }}>
+                    <div className="form-group" style={{ marginBottom: '0.85rem' }}>
                       <label className="form-label">
                         <ImageIcon size={14} />
-                        <span>Add Photos & Videos (Videos max 5MB)</span>
+                        <span>Add Photos & Videos (Video limit 5MB)</span>
                       </label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                        <label
-                          style={{
-                            background: 'rgba(99, 102, 241, 0.15)',
-                            border: '1px dashed var(--primary)',
-                            borderRadius: '8px',
-                            padding: '0.65rem',
-                            textAlign: 'center',
-                            cursor: 'pointer',
-                            fontSize: '0.825rem',
-                            fontWeight: 700,
-                            color: '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.4rem'
-                          }}
-                        >
-                          <Upload size={14} />
-                          <span>Upload Photo / Video</span>
-                          <input
-                            type="file"
-                            accept="image/*,video/mp4,video/webm"
-                            onChange={(e) => handleMediaFileUpload(e, false)}
-                            style={{ display: 'none' }}
-                          />
-                        </label>
-
-                        <input
-                          type="url"
-                          className="form-input"
-                          placeholder="Or paste media https:// link..."
-                          value={newItem.image}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setNewItem(prev => ({
-                              ...prev,
-                              image: val,
-                              media: val ? [...(prev.media || []), { type: 'image', url: val }] : prev.media
-                            }));
-                          }}
-                        />
-                      </div>
+                      <label style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px dashed var(--primary)', borderRadius: '8px', padding: '0.65rem', textAlign: 'center', cursor: 'pointer', fontSize: '0.825rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                        <Upload size={14} />
+                        <span>Upload Photo / Video</span>
+                        <input type="file" accept="image/*,video/mp4,video/webm" onChange={(e) => handleMediaFileUpload(e, false)} style={{ display: 'none' }} />
+                      </label>
 
                       {newItem.media && newItem.media.length > 0 && (
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                           {newItem.media.map((med, idx) => (
-                            <div key={idx} style={{ position: 'relative', width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#000' }}>
+                            <div key={idx} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#000' }}>
                               {med.type === 'video' ? (
                                 <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e1b4b', color: '#fff' }}>
-                                  <Play size={20} />
+                                  <Play size={18} />
                                 </div>
                               ) : (
                                 <img src={med.url} alt="media" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -711,7 +771,7 @@ export default function ManageModal() {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveMediaItem(idx, false)}
-                                style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(0,0,0,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '0.7rem' }}
+                                style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(0,0,0,0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', cursor: 'pointer', fontSize: '0.65rem' }}
                               >
                                 ✕
                               </button>
@@ -727,7 +787,7 @@ export default function ManageModal() {
                         type="text"
                         className="form-input"
                         required
-                        placeholder="e.g. Sharp Leather Boots"
+                        placeholder="e.g. Sharp Chronograph Watch"
                         value={newItem.name}
                         onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                       />
@@ -757,29 +817,7 @@ export default function ManageModal() {
                       </div>
                     </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Full Item Description</label>
-                      <textarea
-                        className="form-textarea"
-                        rows="2"
-                        placeholder="Detailed specifications, fabric, features..."
-                        value={newItem.description}
-                        onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Available Sizes / Variants (comma separated)</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        placeholder="e.g. EU 40, EU 41, EU 42, EU 43"
-                        value={newItem.sizesRaw}
-                        onChange={(e) => setNewItem({ ...newItem, sizesRaw: e.target.value })}
-                      />
-                    </div>
-
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: '0.75rem' }}>
                       <label className="form-label">Category *</label>
                       <select
                         className="form-select"
@@ -795,7 +833,7 @@ export default function ManageModal() {
                     </div>
 
                     {(newItem.category === 'NEW_CATEGORY' || newItem.category === '') && (
-                      <div className="form-group">
+                      <div className="form-group" style={{ marginBottom: '0.75rem' }}>
                         <label className="form-label">New Category Name</label>
                         <input
                           type="text"
@@ -807,19 +845,42 @@ export default function ManageModal() {
                       </div>
                     )}
 
+                    <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                      <label className="form-label">Sizes / Variants (comma separated)</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="e.g. EU 40, EU 41, EU 42"
+                        value={newItem.sizesRaw}
+                        onChange={(e) => setNewItem({ ...newItem, sizesRaw: e.target.value })}
+                      />
+                    </div>
+
                     <button type="submit" className="btn-add-cart" style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}>
                       <Plus size={16} />
-                      <span>Save Item to Catalog</span>
+                      <span>Add to Catalog</span>
                     </button>
                   </form>
                 )}
 
-                {/* PRODUCT LIST TABLE */}
-                <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                {/* PRODUCT LIST (Mobile-First Responsive Layout) */}
+                <div style={{ maxHeight: '420px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                   {editProducts.map((p) => (
-                    <div key={p.id} className="manage-item-row">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
-                        <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div
+                      key={p.id}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '12px',
+                        padding: '0.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      {/* Product Header Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: '50px', height: '50px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           {p.image ? (
                             <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
@@ -827,45 +888,62 @@ export default function ManageModal() {
                           )}
                         </div>
 
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{p.name}</div>
-                          <div style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>
-                            {editSettings.currency} {p.price.toLocaleString()} • Category: <strong>{p.category}</strong>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {p.name}
                           </div>
-                          {p.sizes && p.sizes.length > 0 && (
-                            <div style={{ fontSize: '0.725rem', color: 'var(--primary)' }}>
-                              Sizes: {p.sizes.join(', ')}
-                            </div>
-                          )}
+                          <div style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>
+                            {editSettings.currency} {p.price.toLocaleString()} • <span style={{ color: 'var(--primary)' }}>{p.category}</span>
+                          </div>
                         </div>
                       </div>
 
-                      <button
-                        className="btn-icon"
-                        style={{ padding: '0.3rem 0.6rem', fontSize: '0.775rem', background: 'rgba(99, 102, 241, 0.2)', borderColor: 'var(--primary)', color: '#fff' }}
-                        onClick={() => startEditingProduct(p)}
-                        title="Edit published item details"
-                      >
-                        <Edit size={14} />
-                        <span>Edit</span>
-                      </button>
+                      {/* Product Controls Row (Stock, Edit, Delete) */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.4rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Stock:</span>
+                          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleStockChange(p.id, -1)}
+                              style={{ background: 'none', border: 'none', color: '#fff', padding: '0.2rem 0.5rem', cursor: 'pointer', fontWeight: 800 }}
+                            >
+                              -
+                            </button>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 800, padding: '0 0.35rem' }}>{p.stock}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleStockChange(p.id, 1)}
+                              style={{ background: 'none', border: 'none', color: '#fff', padding: '0.2rem 0.5rem', cursor: 'pointer', fontWeight: 800 }}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginLeft: '0.2rem', marginRight: '0.3rem' }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Stock:</span>
-                        <div className="qty-controls" style={{ padding: '0.1rem 0.4rem' }}>
-                          <button type="button" className="qty-btn" onClick={() => handleStockChange(p.id, -1)}>-</button>
-                          <span className="qty-val" style={{ fontSize: '0.825rem' }}>{p.stock}</span>
-                          <button type="button" className="qty-btn" onClick={() => handleStockChange(p.id, 1)}>+</button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <button
+                            type="button"
+                            className="btn-icon"
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem', background: 'rgba(99, 102, 241, 0.2)', borderColor: 'var(--primary)', color: '#fff' }}
+                            onClick={() => startEditingProduct(p)}
+                            title="Edit product"
+                          >
+                            <Edit size={13} />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn-close"
+                            style={{ width: 30, height: 30 }}
+                            onClick={() => handleDeleteProduct(p.id)}
+                            title="Delete product"
+                          >
+                            <Trash2 size={14} color="#f87171" />
+                          </button>
                         </div>
                       </div>
-
-                      <button
-                        className="btn-close"
-                        onClick={() => handleDeleteProduct(p.id)}
-                        title="Delete product"
-                      >
-                        <Trash2 size={15} color="#f87171" />
-                      </button>
                     </div>
                   ))}
                 </div>
@@ -895,7 +973,7 @@ export default function ManageModal() {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
                   <div className="form-group">
                     <label className="form-label">WhatsApp Number</label>
                     <input
@@ -917,7 +995,7 @@ export default function ManageModal() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
                   <div className="form-group">
                     <label className="form-label">MoMo Number</label>
                     <input
@@ -949,10 +1027,97 @@ export default function ManageModal() {
                     onChange={(e) => setEditSettings({ ...editSettings, momoNetwork: e.target.value })}
                   />
                 </div>
+
+                {/* SECURITY: CHANGE ADMIN PIN SECTION */}
+                <div style={{
+                  background: 'rgba(99, 102, 241, 0.08)',
+                  border: '1px solid var(--border-active)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  marginTop: '0.5rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                    <KeyRound size={18} color="var(--primary)" />
+                    <h5 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-main)' }}>Change Owner PIN</h5>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
+                    To protect your store, confirm your existing PIN before setting a new one.
+                  </p>
+
+                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                    <label className="form-label">Existing (Old) PIN *</label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      placeholder="Enter current PIN"
+                      maxLength={10}
+                      value={currentPinInput}
+                      onChange={(e) => { setCurrentPinInput(e.target.value); setPinChangeError(''); setPinChangeSuccess(''); }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                    <div className="form-group">
+                      <label className="form-label">New PIN (4+ digits) *</label>
+                      <input
+                        type="password"
+                        className="form-input"
+                        placeholder="New PIN"
+                        maxLength={10}
+                        value={newPinInput}
+                        onChange={(e) => { setNewPinInput(e.target.value); setPinChangeError(''); setPinChangeSuccess(''); }}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Confirm New PIN *</label>
+                      <input
+                        type="password"
+                        className="form-input"
+                        placeholder="Confirm new PIN"
+                        maxLength={10}
+                        value={confirmNewPinInput}
+                        onChange={(e) => { setConfirmNewPinInput(e.target.value); setPinChangeError(''); setPinChangeSuccess(''); }}
+                      />
+                    </div>
+                  </div>
+
+                  {pinChangeError && (
+                    <div style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.65rem' }}>
+                      <AlertCircle size={14} />
+                      <span>{pinChangeError}</span>
+                    </div>
+                  )}
+
+                  {pinChangeSuccess && (
+                    <div style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.65rem' }}>
+                      <Check size={14} />
+                      <span>{pinChangeSuccess}</span>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    className="btn-icon"
+                    style={{
+                      background: 'var(--primary)',
+                      color: '#fff',
+                      borderColor: 'transparent',
+                      width: '100%',
+                      justifyContent: 'center',
+                      padding: '0.65rem'
+                    }}
+                    onClick={handleUpdatePin}
+                  >
+                    <KeyRound size={15} />
+                    <span>Verify & Set New PIN</span>
+                  </button>
+                </div>
               </div>
             )}
 
-            <button className="btn-publish" onClick={handlePublish}>
+            {/* Save & Publish to Store Button */}
+            <button className="btn-publish" onClick={handlePublish} style={{ marginTop: '1rem' }}>
               <Save size={18} />
               <span>Save & Publish to Store</span>
             </button>

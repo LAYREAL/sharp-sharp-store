@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { X, Plus, Minus, Trash2, ArrowRight, ShoppingCart, Package, ShoppingBag } from 'lucide-react';
+import { X, ArrowLeft, Plus, Minus, Trash2, ArrowRight, ShoppingCart, Package, ShoppingBag } from 'lucide-react';
 
 export default function CartModal() {
   const {
@@ -19,10 +19,19 @@ export default function CartModal() {
   return (
     <div className="modal-overlay" onClick={() => setIsCartOpen(false)}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">
-            <ShoppingCart size={20} color="var(--primary)" />
-            <span>Your Shopping Cart</span>
+        <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={() => setIsCartOpen(false)}
+            style={{ padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+          <h2 className="modal-title" style={{ fontSize: '1.05rem', margin: '0 0.5rem', flex: 1, textAlign: 'center' }}>
+            <ShoppingCart size={18} color="var(--primary)" />
+            <span>Shopping Cart</span>
           </h2>
           <button className="btn-close" onClick={() => setIsCartOpen(false)}>
             <X size={18} />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
-import { X, ShoppingBag, Check, ShieldCheck, Truck, Play, Maximize2, Package } from 'lucide-react';
+import { X, ArrowLeft, ShoppingBag, Check, ShieldCheck, Truck, Play, Maximize2, Package } from 'lucide-react';
 
 export default function ProductDetailModal() {
   const {
@@ -102,8 +102,32 @@ export default function ProductDetailModal() {
           )}
 
           <button
+            type="button"
+            className="btn-icon"
+            style={{
+              position: 'absolute',
+              top: '1rem',
+              left: '1rem',
+              background: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 10,
+              color: '#fff',
+              border: '1px solid rgba(255,255,255,0.2)',
+              padding: '0.4rem 0.75rem',
+              gap: '0.35rem'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedProductForView(null);
+            }}
+          >
+            <ArrowLeft size={16} />
+            <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>Back</span>
+          </button>
+
+          <button
             className="btn-close"
-            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', zIndex: 10 }}
+            style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', zIndex: 10 }}
             onClick={(e) => {
               e.stopPropagation();
               setSelectedProductForView(null);

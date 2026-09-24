@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { DEFAULT_STORE_SETTINGS, DEFAULT_PRODUCTS, DEFAULT_ORDERS } from '../utils/defaultData';
 import { isSupabaseConfigured } from '../lib/supabase';
 import {
@@ -58,22 +58,196 @@ export function StoreProvider({ children }) {
     try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch { return 'dark'; }
   });
 
-  const [isTutorialOpen, setIsTutorialOpen] = useState(() => {
+  const [isTutorialOpen, rawSetIsTutorialOpen] = useState(() => {
     try { return !localStorage.getItem(TUTORIAL_SEEN_KEY); } catch { return true; }
   });
 
-  // ── UI State ─────────────────────────────────────────────────────────────
+  // ── UI Modal States ───────────────────────────────────────────────────────
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [isManageOpen, setIsManageOpen] = useState(false);
-  const [isCustomerOrdersOpen, setIsCustomerOrdersOpen] = useState(false);
-  const [selectedProductForView, setSelectedProductForView] = useState(null);
-  const [activeLightboxMedia, setActiveLightboxMedia] = useState(null);
+  const [isCartOpen, rawSetIsCartOpen] = useState(false);
+  const [isCheckoutOpen, rawSetIsCheckoutOpen] = useState(false);
+  const [isManageOpen, rawSetIsManageOpen] = useState(false);
+  const [isCustomerOrdersOpen, rawSetIsCustomerOrdersOpen] = useState(false);
+  const [selectedProductForView, rawSetSelectedProductForView] = useState(null);
+  const [activeLightboxMedia, rawSetActiveLightboxMedia] = useState(null);
+  const [isSidebarOpen, rawSetIsSidebarOpen] = useState(false);
   const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState(false);
   const [publishNotification, setPublishNotification] = useState(null);
   const [isDbLoading, setIsDbLoading] = useState(isSupabaseConfigured);
+
+  // ── Browser & Mobile Back-Button Management ──────────────────────────────
+  const modalHistoryRef = useRef([]);
+
+  const pushModalHistory = (name) => {
+    modalHistoryRef.current.push(name);
+    try {
+      window.history.pushState({ modal: name, depth: modalHistoryRef.current.length }, '');
+    } catch (e) {}
+  };
+
+  const popModalHistory = (name) => {
+    const idx = modalHistoryRef.current.lastIndexOf(name);
+    if (idx !== -1) {
+      modalHistoryRef.current.splice(idx, 1);
+    }
+  };
+
+  // Synchronized setter wrappers
+  const setIsCartOpen = (val) => {
+    if (val && !isCartOpen) {
+      pushModalHistory('cart');
+      rawSetIsCartOpen(true);
+    } else if (!val && isCartOpen) {
+      popModalHistory('cart');
+      rawSetIsCartOpen(false);
+    } else {
+      rawSetIsCartOpen(val);
+    }
+  };
+
+  const setIsCheckoutOpen = (val) => {
+    if (val && !isCheckoutOpen) {
+      pushModalHistory('checkout');
+      rawSetIsCheckoutOpen(true);
+    } else if (!val && isCheckoutOpen) {
+      popModalHistory('checkout');
+      rawSetIsCheckoutOpen(false);
+    } else {
+      rawSetIsCheckoutOpen(val);
+    }
+  };
+
+  const setIsManageOpen = (val) => {
+    if (val && !isManageOpen) {
+      pushModalHistory('manage');
+      rawSetIsManageOpen(true);
+    } else if (!val && isManageOpen) {
+      popModalHistory('manage');
+      rawSetIsManageOpen(false);
+    } else {
+      rawSetIsManageOpen(val);
+    }
+  };
+
+  const setIsCustomerOrdersOpen = (val) => {
+    if (val && !isCustomerOrdersOpen) {
+      pushModalHistory('orders');
+      rawSetIsCustomerOrdersOpen(true);
+    } else if (!val && isCustomerOrdersOpen) {
+      popModalHistory('orders');
+      rawSetIsCustomerOrdersOpen(false);
+    } else {
+      rawSetIsCustomerOrdersOpen(val);
+    }
+  };
+
+  const setSelectedProductForView = (product) => {
+    if (product && !selectedProductForView) {
+      pushModalHistory('product');
+      rawSetSelectedProductForView(product);
+    } else if (!product && selectedProductForView) {
+      popModalHistory('product');
+      rawSetSelectedProductForView(null);
+    } else {
+      rawSetSelectedProductForView(product);
+    }
+  };
+
+  const setActiveLightboxMedia = (media) => {
+    if (media && !activeLightboxMedia) {
+      pushModalHistory('lightbox');
+      rawSetActiveLightboxMedia(media);
+    } else if (!media && activeLightboxMedia) {
+      popModalHistory('lightbox');
+      rawSetActiveLightboxMedia(null);
+    } else {
+      rawSetActiveLightboxMedia(media);
+    }
+  };
+
+  const setIsSidebarOpen = (val) => {
+    if (val && !isSidebarOpen) {
+      pushModalHistory('sidebar');
+      rawSetIsSidebarOpen(true);
+    } else if (!val && isSidebarOpen) {
+      popModalHistory('sidebar');
+      rawSetIsSidebarOpen(false);
+    } else {
+      rawSetIsSidebarOpen(val);
+    }
+  };
+
+  const setIsTutorialOpen = (val) => {
+    if (val && !isTutorialOpen) {
+      pushModalHistory('tutorial');
+      rawSetIsTutorialOpen(true);
+    } else if (!val && isTutorialOpen) {
+      popModalHistory('tutorial');
+      rawSetIsTutorialOpen(false);
+    } else {
+      rawSetIsTutorialOpen(val);
+    }
+  };
+
+  // Listen to popstate event (fired when mobile device back button / swipe is used)
+  useEffect(() => {
+    const handlePopState = (event) => {
+      // Topmost overlay closes first
+      if (activeLightboxMedia) {
+        rawSetActiveLightboxMedia(null);
+        popModalHistory('lightbox');
+        return;
+      }
+      if (selectedProductForView) {
+        rawSetSelectedProductForView(null);
+        popModalHistory('product');
+        return;
+      }
+      if (isCheckoutOpen) {
+        rawSetIsCheckoutOpen(false);
+        popModalHistory('checkout');
+        return;
+      }
+      if (isCartOpen) {
+        rawSetIsCartOpen(false);
+        popModalHistory('cart');
+        return;
+      }
+      if (isCustomerOrdersOpen) {
+        rawSetIsCustomerOrdersOpen(false);
+        popModalHistory('orders');
+        return;
+      }
+      if (isManageOpen) {
+        rawSetIsManageOpen(false);
+        popModalHistory('manage');
+        return;
+      }
+      if (isSidebarOpen) {
+        rawSetIsSidebarOpen(false);
+        popModalHistory('sidebar');
+        return;
+      }
+      if (isTutorialOpen) {
+        rawSetIsTutorialOpen(false);
+        popModalHistory('tutorial');
+        return;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [
+    activeLightboxMedia,
+    selectedProductForView,
+    isCheckoutOpen,
+    isCartOpen,
+    isCustomerOrdersOpen,
+    isManageOpen,
+    isSidebarOpen,
+    isTutorialOpen
+  ]);
 
   // ── Theme ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -342,6 +516,8 @@ export function StoreProvider({ children }) {
     setSelectedProductForView,
     activeLightboxMedia,
     setActiveLightboxMedia,
+    isSidebarOpen,
+    setIsSidebarOpen,
     isOwnerAuthenticated,
     setIsOwnerAuthenticated,
     addToCart,

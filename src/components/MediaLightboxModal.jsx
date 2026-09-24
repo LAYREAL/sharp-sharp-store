@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { X, Maximize2 } from 'lucide-react';
+import { X, ArrowLeft, Maximize2 } from 'lucide-react';
 
 export default function MediaLightboxModal() {
   const { activeLightboxMedia, setActiveLightboxMedia } = useStore();
@@ -28,10 +28,30 @@ export default function MediaLightboxModal() {
         onClick={(e) => e.stopPropagation()}
       >
         <button
+          type="button"
+          className="btn-icon"
+          style={{
+            position: 'absolute',
+            top: '-44px',
+            left: '0',
+            background: 'rgba(255, 255, 255, 0.2)',
+            color: '#fff',
+            borderColor: 'transparent',
+            padding: '0.35rem 0.75rem',
+            gap: '0.35rem',
+            zIndex: 10
+          }}
+          onClick={() => setActiveLightboxMedia(null)}
+        >
+          <ArrowLeft size={16} />
+          <span style={{ fontSize: '0.825rem', fontWeight: 700 }}>Back</span>
+        </button>
+
+        <button
           className="btn-close"
           style={{
             position: 'absolute',
-            top: '-40px',
+            top: '-44px',
             right: '0',
             background: 'rgba(255, 255, 255, 0.2)',
             color: '#fff',

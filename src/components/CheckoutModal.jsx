@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { generateWhatsAppLink } from '../utils/whatsappFormatter';
-import { X, Phone, User, MapPin, Copy, Check, MessageSquare, ShieldCheck, CreditCard, Info } from 'lucide-react';
+import { X, ArrowLeft, Phone, User, MapPin, Copy, Check, MessageSquare, ShieldCheck, CreditCard, Info } from 'lucide-react';
 
 export default function CheckoutModal() {
   const {
@@ -52,10 +52,19 @@ export default function CheckoutModal() {
   return (
     <div className="modal-overlay" onClick={() => setIsCheckoutOpen(false)}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">
-            <CreditCard size={20} color="var(--primary)" />
-            <span>SHARP SHARP - Order Checkout</span>
+        <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={() => { setIsCheckoutOpen(false); setIsCartOpen(true); }}
+            style={{ padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+          >
+            <ArrowLeft size={16} />
+            <span>Cart</span>
+          </button>
+          <h2 className="modal-title" style={{ fontSize: '1.05rem', margin: '0 0.5rem', flex: 1, textAlign: 'center' }}>
+            <CreditCard size={18} color="var(--primary)" />
+            <span>Checkout</span>
           </h2>
           <button className="btn-close" onClick={() => setIsCheckoutOpen(false)}>
             <X size={18} />

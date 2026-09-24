@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { printInvoice } from '../utils/invoiceGenerator';
-import { X, Receipt, FileText, RefreshCw, Download, CheckCircle, Clock, MapPin, Package } from 'lucide-react';
+import { X, ArrowLeft, Receipt, FileText, RefreshCw, Download, CheckCircle, Clock, MapPin, Package } from 'lucide-react';
 
 export default function CustomerOrdersModal() {
   const {
@@ -17,10 +17,19 @@ export default function CustomerOrdersModal() {
   return (
     <div className="modal-overlay" onClick={() => setIsCustomerOrdersOpen(false)}>
       <div className="modal-content" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">
-            <Receipt size={20} color="var(--primary)" />
-            <span>My Past Orders & Download Receipts</span>
+        <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={() => setIsCustomerOrdersOpen(false)}
+            style={{ padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+          <h2 className="modal-title" style={{ fontSize: '1.05rem', margin: '0 0.5rem', flex: 1, textAlign: 'center' }}>
+            <Receipt size={18} color="var(--primary)" />
+            <span>My Orders & Invoices</span>
           </h2>
           <button className="btn-close" onClick={() => setIsCustomerOrdersOpen(false)}>
             <X size={18} />
