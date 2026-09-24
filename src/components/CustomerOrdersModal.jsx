@@ -95,7 +95,7 @@ export default function CustomerOrdersModal() {
                   {/* Delivery details */}
                   <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     <MapPin size={14} color="var(--primary)" />
-                    <span>Delivery Address: <strong style={{ color: '#fff' }}>{ord.customerAddress}</strong></span>
+                    <span>Delivery Address: <strong style={{ color: 'var(--text-main)' }}>{ord.customerAddress}</strong></span>
                   </div>
 
                   {/* Items list */}
@@ -110,7 +110,7 @@ export default function CustomerOrdersModal() {
                         </strong>
                       </div>
                     ))}
-                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '0.4rem', paddingTop: '0.4rem', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: '#fff', fontSize: '0.9rem' }}>
+                    <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '0.4rem', paddingTop: '0.4rem', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: 'var(--text-main)', fontSize: '0.9rem' }}>
                       <span>Total Amount:</span>
                       <span>{storeSettings.currency} {ord.totalAmount.toLocaleString()}</span>
                     </div>

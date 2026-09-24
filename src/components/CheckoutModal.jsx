@@ -167,7 +167,7 @@ export default function CheckoutModal() {
             </div>
             <div className="momo-detail-row" style={{ marginTop: '0.6rem', paddingTop: '0.5rem', borderTop: '1px dashed rgba(245, 158, 11, 0.3)' }}>
               <span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>Exact Amount to Send:</span>
-              <strong style={{ fontSize: '1.1rem', color: '#fff' }}>
+              <strong style={{ fontSize: '1.1rem', color: 'var(--text-main)' }}>
                 {storeSettings.currency} {totalCartPrice.toLocaleString()}
               </strong>
             </div>

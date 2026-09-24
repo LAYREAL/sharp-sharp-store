@@ -93,7 +93,7 @@ export default function Sidebar() {
             className="sidebar-item"
             onClick={() => {
               setIsSidebarOpen(false);
-              setIsCustomerOrdersOpen(true);
+              setTimeout(() => setIsCustomerOrdersOpen(true), 60);
             }}
           >
             <div className="sidebar-item-left">
@@ -150,7 +150,7 @@ export default function Sidebar() {
             className="sidebar-item"
             onClick={() => {
               setIsSidebarOpen(false);
-              setIsTutorialOpen(true);
+              setTimeout(() => setIsTutorialOpen(true), 60);
             }}
           >
             <div className="sidebar-item-left">
@@ -173,7 +173,7 @@ export default function Sidebar() {
             style={{ background: 'rgba(99, 102, 241, 0.06)', borderColor: 'var(--border-active)' }}
             onClick={() => {
               setIsSidebarOpen(false);
-              setIsManageOpen(true);
+              setTimeout(() => setIsManageOpen(true), 60);
             }}
           >
             <div className="sidebar-item-left">

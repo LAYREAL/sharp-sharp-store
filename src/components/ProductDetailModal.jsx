@@ -199,7 +199,7 @@ export default function ProductDetailModal() {
             {product.name}
           </h2>
 
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', marginBottom: '1rem' }}>
+          <div className="product-detail-price" style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem' }}>
             {storeSettings.currency} {product.price.toLocaleString()}
           </div>
 
