@@ -352,7 +352,7 @@ export default function ManageModal() {
     <div className="modal-overlay" onClick={() => setIsManageOpen(false)}>
       <div
         className="modal-content manage-modal-container"
-        style={{ maxWidth: '780px' }}
+        style={{ maxWidth: '820px' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Top Header with Dynamic Back Button */}
@@ -434,7 +434,7 @@ export default function ManageModal() {
         ) : (
           <>
             {/* Navigation Tabs */}
-            <div className="manage-tabs" style={{ display: 'flex', gap: '0.35rem', marginBottom: '1rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
+            <div className="manage-tabs">
               <button
                 className={`manage-tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
                 onClick={() => { setActiveTab('orders'); setEditingProduct(null); setShowAddForm(false); }}
@@ -579,7 +579,7 @@ export default function ManageModal() {
                               </strong>
                             </div>
                           ))}
-                          <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '0.35rem', paddingTop: '0.35rem', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: '#fff' }}>
+                          <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '0.35rem', paddingTop: '0.35rem', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: 'var(--text-main)' }}>
                             <span>Total Amount:</span>
                             <span>{editSettings.currency} {ord.totalAmount.toLocaleString()}</span>
                           </div>
@@ -906,7 +906,7 @@ export default function ManageModal() {
                             <button
                               type="button"
                               onClick={() => handleStockChange(p.id, -1)}
-                              style={{ background: 'none', border: 'none', color: '#fff', padding: '0.2rem 0.5rem', cursor: 'pointer', fontWeight: 800 }}
+                              style={{ background: 'none', border: 'none', color: 'var(--text-main)', padding: '0.2rem 0.5rem', cursor: 'pointer', fontWeight: 800 }}
                             >
                               -
                             </button>
@@ -914,7 +914,7 @@ export default function ManageModal() {
                             <button
                               type="button"
                               onClick={() => handleStockChange(p.id, 1)}
-                              style={{ background: 'none', border: 'none', color: '#fff', padding: '0.2rem 0.5rem', cursor: 'pointer', fontWeight: 800 }}
+                              style={{ background: 'none', border: 'none', color: 'var(--text-main)', padding: '0.2rem 0.5rem', cursor: 'pointer', fontWeight: 800 }}
                             >
                               +
                             </button>

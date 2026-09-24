@@ -9,6 +9,7 @@ export default function CartModal() {
     cart,
     updateCartQuantity,
     removeFromCart,
+    clearCart,
     totalCartPrice,
     storeSettings,
     setIsCheckoutOpen
@@ -19,6 +20,7 @@ export default function CartModal() {
   return (
     <div className="modal-overlay" onClick={() => setIsCartOpen(false)}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
             type="button"
@@ -33,7 +35,7 @@ export default function CartModal() {
             <ShoppingCart size={18} color="var(--primary)" />
             <span>Shopping Cart</span>
           </h2>
-          <button className="btn-close" onClick={() => setIsCartOpen(false)}>
+          <button className="btn-close" onClick={() => setIsCartOpen(false)} title="Close cart">
             <X size={18} />
           </button>
         </div>
@@ -48,6 +50,7 @@ export default function CartModal() {
           </div>
         ) : (
           <>
+            {/* Cart Items */}
             <div className="cart-list">
               {cart.map((item) => {
                 const keyId = item.cartItemId || item.id;
@@ -61,36 +64,39 @@ export default function CartModal() {
                           <Package size={20} color="var(--primary)" />
                         )}
                       </div>
-                      <div>
+                      <div style={{ minWidth: 0 }}>
                         <div className="cart-item-title">{item.name}</div>
                         {item.selectedSize && (
-                          <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>
                             Size: {item.selectedSize}
                           </div>
                         )}
                         <div className="cart-item-price">
-                          {storeSettings.currency} {item.price.toLocaleString()} x {item.quantity} = {' '}
-                          <strong style={{ color: '#fff' }}>
+                          {storeSettings.currency} {item.price.toLocaleString()} x {item.quantity}
+                          {' = '}
+                          <strong>
                             {storeSettings.currency} {(item.price * item.quantity).toLocaleString()}
                           </strong>
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {/* Controls: qty stepper + delete */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
                       <div className="qty-controls">
-                        <button className="qty-btn" onClick={() => updateCartQuantity(keyId, -1)}>
-                          <Minus size={14} />
+                        <button className="qty-btn" onClick={() => updateCartQuantity(keyId, -1)} title="Decrease">
+                          <Minus size={13} />
                         </button>
                         <span className="qty-val">{item.quantity}</span>
-                        <button className="qty-btn" onClick={() => updateCartQuantity(keyId, 1)}>
-                          <Plus size={14} />
+                        <button className="qty-btn" onClick={() => updateCartQuantity(keyId, 1)} title="Increase">
+                          <Plus size={13} />
                         </button>
                       </div>
 
                       <button
+                        type="button"
                         className="btn-close"
-                        style={{ width: '28px', height: '28px' }}
+                        style={{ width: '30px', height: '30px', flexShrink: 0 }}
                         onClick={() => removeFromCart(keyId)}
                         title="Remove item"
                       >
@@ -102,24 +108,55 @@ export default function CartModal() {
               })}
             </div>
 
+            {/* Footer */}
             <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1rem', marginTop: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              {/* Total row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
                 <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Total Amount:</span>
-                <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff' }}>
+                <span style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)' }}>
                   {storeSettings.currency} {totalCartPrice.toLocaleString()}
                 </span>
               </div>
 
-              <button
-                className="btn-publish"
-                onClick={() => {
-                  setIsCartOpen(false);
-                  setIsCheckoutOpen(true);
-                }}
-              >
-                <span>Proceed to Checkout</span>
-                <ArrowRight size={18} />
-              </button>
+              {/* Action buttons */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                <button
+                  className="btn-publish"
+                  onClick={() => {
+                    setIsCartOpen(false);
+                    setIsCheckoutOpen(true);
+                  }}
+                >
+                  <span>Proceed to Checkout</span>
+                  <ArrowRight size={18} />
+                </button>
+
+                {/* Clear Cart */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Remove all items from cart?')) clearCart();
+                  }}
+                  style={{
+                    background: 'none',
+                    border: '1px solid rgba(248, 113, 113, 0.3)',
+                    color: '#f87171',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '0.55rem 1rem',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Trash2 size={15} />
+                  <span>Clear Cart</span>
+                </button>
+              </div>
             </div>
           </>
         )}

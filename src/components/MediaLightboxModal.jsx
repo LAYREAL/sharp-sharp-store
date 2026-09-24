@@ -12,7 +12,7 @@ export default function MediaLightboxModal() {
   return (
     <div
       className="modal-overlay"
-      style={{ zIndex: 300, background: 'rgba(0, 0, 0, 0.92)' }}
+      style={{ zIndex: 400, background: 'rgba(0, 0, 0, 0.92)' }}
       onClick={() => setActiveLightboxMedia(null)}
     >
       <div
