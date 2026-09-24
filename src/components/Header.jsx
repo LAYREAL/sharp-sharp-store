@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { Search, Settings, ShoppingBag, Receipt } from 'lucide-react';
+import { Search, Settings, ShoppingBag, Receipt, Sun, Moon, HelpCircle } from 'lucide-react';
 
 export default function Header() {
   const {
@@ -9,7 +9,10 @@ export default function Header() {
     setSearchQuery,
     setIsManageOpen,
     setIsCustomerOrdersOpen,
-    clientOrders
+    clientOrders,
+    theme,
+    toggleTheme,
+    setIsTutorialOpen
   } = useStore();
 
   return (
@@ -36,6 +39,22 @@ export default function Header() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+
+          <button
+            className="theme-toggle-btn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
+
+          <button
+            className="btn-icon"
+            onClick={() => setIsTutorialOpen(true)}
+            title="How this store works"
+          >
+            <HelpCircle size={18} />
+          </button>
 
           <button
             className="btn-icon"
