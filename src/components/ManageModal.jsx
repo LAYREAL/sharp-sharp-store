@@ -61,6 +61,20 @@ export default function ManageModal() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [mediaError, setMediaError] = useState('');
 
+  // Add Item Draft State
+  const [newItem, setNewItem] = useState({
+    name: '',
+    price: '',
+    category: '',
+    customCategory: '',
+    image: '',
+    media: [],
+    description: '',
+    stock: 10,
+    isStockTracked: true,
+    sizesRaw: 'Standard'
+  });
+
   // Sync draft states when modal opens
   useEffect(() => {
     if (isManageOpen) {
@@ -263,20 +277,6 @@ export default function ManageModal() {
       });
     }
   };
-
-  // Add Item Draft State
-  const [newItem, setNewItem] = useState({
-    name: '',
-    price: '',
-    category: '',
-    customCategory: '',
-    image: '',
-    media: [],
-    description: '',
-    stock: 10,
-    isStockTracked: true,
-    sizesRaw: 'Standard'
-  });
 
   const handleAddProduct = (e) => {
     e.preventDefault();
