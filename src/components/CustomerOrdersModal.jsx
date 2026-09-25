@@ -69,7 +69,12 @@ export default function CustomerOrdersModal() {
                     <div>
                       <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.95rem' }}>{ord.id}</span>
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                        {new Date(ord.date).toLocaleDateString()} {new Date(ord.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {(() => {
+                          try {
+                            const d = new Date(ord.date);
+                            return isNaN(d.getTime()) ? 'Recent' : `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                          } catch { return 'Recent'; }
+                        })()}
                       </span>
                     </div>
 
@@ -100,7 +105,7 @@ export default function CustomerOrdersModal() {
 
                   {/* Items list */}
                   <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.6rem 0.8rem', borderRadius: '8px', fontSize: '0.825rem' }}>
-                    {ord.items.map((it, idx) => (
+                    {(Array.isArray(ord.items) ? ord.items : []).map((it, idx) => (
                       <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', margin: '0.25rem 0' }}>
                         <span>
                           • {it.quantity}x {it.name} {it.selectedSize ? `[Size: ${it.selectedSize}]` : ''}

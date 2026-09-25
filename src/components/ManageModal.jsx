@@ -104,9 +104,21 @@ export default function ManageModal() {
   };
 
   // ── Authentication ────────────────────────────────────────────────────────
+  const formatOrderDate = (dateVal) => {
+    if (!dateVal) return 'Recent';
+    try {
+      const d = new Date(dateVal);
+      if (isNaN(d.getTime())) return 'Recent';
+      return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } catch {
+      return 'Recent';
+    }
+  };
+
   const handlePinSubmit = (e) => {
     e.preventDefault();
-    if (pinInput === (storeSettings.adminPin || '1234')) {
+    const currentPin = String(storeSettings.adminPin || '1234').trim();
+    if (String(pinInput).trim() === currentPin) {
       setIsOwnerAuthenticated(true);
       setPinError('');
     } else {
@@ -349,7 +361,14 @@ export default function ManageModal() {
   };
 
   return (
-    <div className="modal-overlay" onClick={() => setIsManageOpen(false)}>
+    <div
+      className="modal-overlay"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setIsManageOpen(false);
+        }
+      }}
+    >
       <div
         className="modal-content manage-modal-container"
         style={{ maxWidth: '820px' }}
@@ -370,7 +389,7 @@ export default function ManageModal() {
             </span>
           </button>
 
-          <h2 className="modal-title" style={{ fontSize: '1.05rem', margin: '0 0.5rem', textAlign: 'center', flex: 1 }}>
+          <h2 className="modal-title" style={{ fontSize: '1.05rem', margin: '0 0.5rem', textAlign: 'center', flex: 1, color: 'var(--text-main)' }}>
             <Settings size={18} color="var(--primary)" />
             <span>Admin Control Panel</span>
           </h2>
@@ -397,7 +416,7 @@ export default function ManageModal() {
               }}>
                 <Lock size={32} color="var(--primary)" />
               </div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Owner Authentication</h3>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-main)' }}>Owner Authentication</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
                 Enter your owner PIN to manage SHARP SHARP store settings, orders & stock. (Default: 1234)
               </p>
@@ -412,13 +431,15 @@ export default function ManageModal() {
             <div className="form-group" style={{ maxWidth: 320, margin: '0 auto 1.25rem' }}>
               <input
                 type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="current-password"
                 className="form-input"
-                style={{ textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.3em', padding: '0.75rem' }}
+                style={{ textAlign: 'center', fontSize: '1.25rem', letterSpacing: '0.3em', padding: '0.75rem', color: 'var(--text-main)' }}
                 placeholder="PIN"
                 maxLength={10}
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
-                autoFocus
               />
             </div>
 
@@ -496,7 +517,7 @@ export default function ManageModal() {
                           <div>
                             <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.95rem' }}>{ord.id}</span>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
-                              {new Date(ord.date).toLocaleDateString()} {new Date(ord.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {formatOrderDate(ord.date)}
                             </span>
                           </div>
 
@@ -571,7 +592,7 @@ export default function ManageModal() {
 
                         {/* Items breakdown */}
                         <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.5rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem' }}>
-                          {ord.items.map((it, i) => (
+                          {(Array.isArray(ord.items) ? ord.items : []).map((it, i) => (
                             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', margin: '0.2rem 0' }}>
                               <span>• {it.quantity}x {it.name} {it.selectedSize ? `[${it.selectedSize}]` : ''}</span>
                               <strong style={{ color: 'var(--text-muted)' }}>

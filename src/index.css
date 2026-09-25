@@ -1565,3 +1565,42 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
+/* ── Absolute Contrast Guarantees in Light Mode ──────────────────────────── */
+[data-theme="light"] .sidebar-drawer {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .sidebar-item-label {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .sidebar-item-desc {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .modal-content,
+[data-theme="light"] .manage-modal-container {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .modal-title,
+[data-theme="light"] .modal-content h1,
+[data-theme="light"] .modal-content h2,
+[data-theme="light"] .modal-content h3,
+[data-theme="light"] .modal-content h4,
+[data-theme="light"] .modal-content h5,
+[data-theme="light"] .manage-modal-container h1,
+[data-theme="light"] .manage-modal-container h2,
+[data-theme="light"] .manage-modal-container h3,
+[data-theme="light"] .manage-modal-container h4,
+[data-theme="light"] .manage-modal-container h5 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .modal-content p {
+  color: #475569 !important;
+}
+
+

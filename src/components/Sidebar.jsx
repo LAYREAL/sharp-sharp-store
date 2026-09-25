@@ -181,7 +181,7 @@ export default function Sidebar() {
                 <Settings size={18} />
               </div>
               <div>
-                <div className="sidebar-item-label" style={{ color: '#fff' }}>Store Management</div>
+                <div className="sidebar-item-label" style={{ color: 'var(--text-main)' }}>Store Management</div>
                 <div className="sidebar-item-desc">Admin panel, catalog & stock</div>
               </div>
             </div>
@@ -234,7 +234,7 @@ export default function Sidebar() {
               </button>
             </div>
 
-            <div style={{ fontSize: '1rem', fontWeight: 800, color: '#fff' }}>
+            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>
               {storeSettings.momoNumber}
             </div>
             <div style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
