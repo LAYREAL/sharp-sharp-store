@@ -6,21 +6,30 @@
   --bg-card-hover: rgba(28, 39, 63, 0.9);
   --bg-glass: rgba(15, 23, 42, 0.9);
   --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(99, 102, 241, 0.5);
-  
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  --border-active: rgba(61, 116, 190, 0.55);
+
+  /* Brand navy sampled directly from the SHARP logo (#0F3460) */
+  --primary: #0F3460;
+  --primary-hover: #0A2647;
+  --primary-mid: #1F4E8C;
+  --primary-gradient: linear-gradient(135deg, #0F3460 0%, #1F4E8C 55%, #3D74BE 100%);
   --accent-momo: #f59e0b;
   --accent-whatsapp: #22c55e;
   --accent-whatsapp-hover: #16a34a;
-  
+
+  /* Semantic status colors — redefined per theme below so pastel-on-dark
+     text never gets reused pastel-on-white where it'd go near-invisible */
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --status-fulfilled-text: #8fb4e0;
+
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
   
   --shadow-lg: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.35);
+  --shadow-glow: 0 0 20px rgba(15, 52, 96, 0.45);
   --radius-lg: 18px;
   --radius-md: 12px;
   --radius-full: 9999px;
@@ -29,22 +38,29 @@
 }
 
 [data-theme="light"] {
-  --bg-main: #f1f5f9;
+  --bg-main: #eef1fb;
   --bg-card: rgba(255, 255, 255, 0.9);
   --bg-card-hover: rgba(255, 255, 255, 1);
   --bg-glass: rgba(248, 250, 252, 0.95);
-  --border-subtle: rgba(15, 23, 42, 0.08);
-  --border-active: rgba(99, 102, 241, 0.5);
+  --border-subtle: rgba(15, 52, 96, 0.10);
+  --border-active: rgba(15, 52, 96, 0.35);
   --text-main: #0f172a;
-  --text-muted: #64748b;
+  --text-muted: #475569;
   --text-dim: #94a3b8;
+
+  /* Darker/more-saturated variants so status text stays readable on
+     near-white surfaces instead of the dark-mode pastel versions */
+  --success: #16a34a;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --status-fulfilled-text: #0F3460;
 }
 
 [data-theme="light"] body {
   background-color: var(--bg-main);
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.05) 0%, transparent 40%);
+    radial-gradient(circle at 15% 15%, rgba(15, 52, 96, 0.07) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(61, 116, 190, 0.06) 0%, transparent 45%);
 }
 
 [data-theme="light"] .store-header {
@@ -104,8 +120,8 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.08) 0%, transparent 40%);
+    radial-gradient(circle at 15% 15%, rgba(15, 52, 96, 0.20) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(61, 116, 190, 0.12) 0%, transparent 40%);
   background-attachment: fixed;
 }
 
@@ -539,7 +555,7 @@ body {
   justify-content: center;
   gap: 0.35rem;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 14px rgba(15, 52, 96, 0.35);
   width: 100%;
 }
 
@@ -1120,7 +1136,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 2px 8px rgba(15, 52, 96, 0.5);
 }
 
 .btn-label-desktop {
@@ -1374,19 +1390,6 @@ body {
   color: #0f172a;
 }
 
-/* Override hardcoded #fff text in order total rows in light mode */
-[data-theme="light"] [style*="color: '#fff'"],
-[data-theme="light"] [style*='color: "#fff"'] {
-  color: #0f172a !important;
-}
-
-/* Light mode: order / item breakdown total rows */
-[data-theme="light"] .order-total-row,
-[data-theme="light"] [class*="order"] [style*="fontWeight: 800"],
-[data-theme="light"] [class*="cart"] [style*="fontWeight: 800"] {
-  color: #0f172a;
-}
-
 /* ── Light Mode: Product Card & Grid ────────────────────────────────────── */
 [data-theme="light"] .product-card {
   background: rgba(255, 255, 255, 0.95);
@@ -1396,7 +1399,7 @@ body {
 
 [data-theme="light"] .product-card:hover {
   background: #fff;
-  border-color: rgba(99, 102, 241, 0.3);
+  border-color: rgba(15, 52, 96, 0.35);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 

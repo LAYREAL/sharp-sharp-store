@@ -77,7 +77,7 @@ export default function CheckoutModal() {
               style={{
                 background: 'rgba(239, 68, 68, 0.15)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#f87171',
+                color: 'var(--danger)',
                 padding: '0.65rem 0.85rem',
                 borderRadius: '8px',
                 fontSize: '0.85rem',
@@ -159,7 +159,7 @@ export default function CheckoutModal() {
             </div>
             <div className="momo-detail-row">
               <span style={{ color: 'var(--text-muted)' }}>MoMo Number:</span>
-              <strong style={{ fontSize: '1rem', color: '#fbbf24' }}>{storeSettings.momoNumber}</strong>
+              <strong style={{ fontSize: '1rem', color: 'var(--warning)' }}>{storeSettings.momoNumber}</strong>
             </div>
             <div className="momo-detail-row">
               <span style={{ color: 'var(--text-muted)' }}>Account Name:</span>

@@ -100,7 +100,7 @@ export default function CartModal() {
                         onClick={() => removeFromCart(keyId)}
                         title="Remove item"
                       >
-                        <Trash2 size={14} color="#f87171" />
+                        <Trash2 size={14} color="var(--danger)" />
                       </button>
                     </div>
                   </div>
@@ -140,7 +140,7 @@ export default function CartModal() {
                   style={{
                     background: 'none',
                     border: '1px solid rgba(248, 113, 113, 0.3)',
-                    color: '#f87171',
+                    color: 'var(--danger)',
                     borderRadius: 'var(--radius-md)',
                     padding: '0.55rem 1rem',
                     fontWeight: 700,

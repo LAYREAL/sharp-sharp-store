@@ -178,7 +178,7 @@ export default function ProductDetailModal() {
                   }}
                 >
                   {mIsVid ? (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e1b4b', color: '#fff' }}>
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--primary)', color: '#fff' }}>
                       <Play size={18} />
                     </div>
                   ) : (

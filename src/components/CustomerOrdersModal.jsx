@@ -81,7 +81,7 @@ export default function CustomerOrdersModal() {
                     <span
                       style={{
                         background: isPaid ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                        color: isPaid ? '#4ade80' : '#fbbf24',
+                        color: isPaid ? 'var(--success)' : 'var(--warning)',
                         border: '1px solid var(--border-subtle)',
                         borderRadius: '20px',
                         padding: '0.2rem 0.6rem',

@@ -409,7 +409,7 @@ export default function ManageModal() {
             <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
               <div style={{
                 width: 64, height: 64, borderRadius: '50%',
-                background: 'rgba(99, 102, 241, 0.15)',
+                background: 'rgba(15, 52, 96, 0.15)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto 0.75rem',
                 border: '1px solid var(--border-active)'
@@ -423,7 +423,7 @@ export default function ManageModal() {
             </div>
 
             {pinError && (
-              <div style={{ color: '#f87171', fontSize: '0.85rem', textAlign: 'center', marginBottom: '1rem', fontWeight: 600 }}>
+              <div style={{ color: 'var(--danger)', fontSize: '0.85rem', textAlign: 'center', marginBottom: '1rem', fontWeight: 600 }}>
                 {pinError}
               </div>
             )}
@@ -526,8 +526,8 @@ export default function ManageModal() {
                               value={ord.status}
                               onChange={(e) => handleStatusChange(ord.id, e.target.value)}
                               style={{
-                                background: ord.status === 'Paid' ? 'rgba(34, 197, 94, 0.15)' : ord.status === 'Fulfilled' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                                color: ord.status === 'Paid' ? '#4ade80' : ord.status === 'Fulfilled' ? '#a5b4fc' : '#fbbf24',
+                                background: ord.status === 'Paid' ? 'rgba(34, 197, 94, 0.15)' : ord.status === 'Fulfilled' ? 'rgba(15, 52, 96, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                                color: ord.status === 'Paid' ? 'var(--success)' : ord.status === 'Fulfilled' ? 'var(--status-fulfilled-text)' : 'var(--warning)',
                                 border: '1px solid var(--border-subtle)',
                                 borderRadius: '6px',
                                 padding: '0.3rem 0.5rem',
@@ -544,7 +544,7 @@ export default function ManageModal() {
                             <button
                               type="button"
                               className="btn-icon"
-                              style={{ background: 'rgba(99, 102, 241, 0.2)', borderColor: 'var(--primary)', color: '#fff', padding: '0.3rem 0.6rem' }}
+                              style={{ background: 'var(--primary)', borderColor: 'var(--primary)', color: '#fff', padding: '0.3rem 0.6rem' }}
                               onClick={() => printInvoice(ord, editSettings)}
                               title="Print Invoice"
                             >
@@ -555,7 +555,7 @@ export default function ManageModal() {
                             <button
                               type="button"
                               className="btn-icon"
-                              style={{ background: 'rgba(34, 197, 94, 0.2)', borderColor: 'var(--accent-whatsapp)', color: '#4ade80', padding: '0.3rem 0.6rem' }}
+                              style={{ background: 'var(--accent-whatsapp)', borderColor: 'var(--accent-whatsapp)', color: '#fff', padding: '0.3rem 0.6rem' }}
                               onClick={() => handleSendInvoiceWhatsApp(ord)}
                               title="Send WhatsApp confirmation"
                             >
@@ -570,7 +570,7 @@ export default function ManageModal() {
                               onClick={() => handleDeleteOrder(ord.id)}
                               title="Delete Order"
                             >
-                              <Trash2 size={13} color="#f87171" />
+                              <Trash2 size={13} color="var(--danger)" />
                             </button>
                           </div>
                         </div>
@@ -650,7 +650,7 @@ export default function ManageModal() {
                     </div>
 
                     {mediaError && (
-                      <div style={{ color: '#f87171', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>
+                      <div style={{ color: 'var(--danger)', fontSize: '0.8rem', marginBottom: '0.5rem', fontWeight: 600 }}>
                         {mediaError}
                       </div>
                     )}
@@ -661,7 +661,7 @@ export default function ManageModal() {
                         <span>Photos & Videos (Video limit 5MB)</span>
                       </label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.5rem' }}>
-                        <label style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px dashed var(--primary)', borderRadius: '8px', padding: '0.65rem', textAlign: 'center', cursor: 'pointer', fontSize: '0.825rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                        <label style={{ background: 'var(--primary)', border: '1px dashed var(--primary-mid)', borderRadius: '8px', padding: '0.65rem', textAlign: 'center', cursor: 'pointer', fontSize: '0.825rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
                           <Upload size={14} />
                           <span>Upload Photo / Video</span>
                           <input type="file" accept="image/*,video/mp4,video/webm" onChange={(e) => handleMediaFileUpload(e, true)} style={{ display: 'none' }} />
@@ -673,7 +673,7 @@ export default function ManageModal() {
                           {editingProduct.media.map((med, idx) => (
                             <div key={idx} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#000' }}>
                               {med.type === 'video' ? (
-                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e1b4b', color: '#fff' }}>
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--primary)', color: '#fff' }}>
                                   <Play size={18} />
                                 </div>
                               ) : (
@@ -772,7 +772,7 @@ export default function ManageModal() {
                         <ImageIcon size={14} />
                         <span>Add Photos & Videos (Video limit 5MB)</span>
                       </label>
-                      <label style={{ background: 'rgba(99, 102, 241, 0.15)', border: '1px dashed var(--primary)', borderRadius: '8px', padding: '0.65rem', textAlign: 'center', cursor: 'pointer', fontSize: '0.825rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                      <label style={{ background: 'var(--primary)', border: '1px dashed var(--primary-mid)', borderRadius: '8px', padding: '0.65rem', textAlign: 'center', cursor: 'pointer', fontSize: '0.825rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
                         <Upload size={14} />
                         <span>Upload Photo / Video</span>
                         <input type="file" accept="image/*,video/mp4,video/webm" onChange={(e) => handleMediaFileUpload(e, false)} style={{ display: 'none' }} />
@@ -783,7 +783,7 @@ export default function ManageModal() {
                           {newItem.media.map((med, idx) => (
                             <div key={idx} style={{ position: 'relative', width: '60px', height: '60px', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: '#000' }}>
                               {med.type === 'video' ? (
-                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1e1b4b', color: '#fff' }}>
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--primary)', color: '#fff' }}>
                                   <Play size={18} />
                                 </div>
                               ) : (
@@ -946,7 +946,7 @@ export default function ManageModal() {
                           <button
                             type="button"
                             className="btn-icon"
-                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem', background: 'rgba(99, 102, 241, 0.2)', borderColor: 'var(--primary)', color: '#fff' }}
+                            style={{ padding: '0.35rem 0.75rem', fontSize: '0.775rem', background: 'var(--primary)', borderColor: 'var(--primary)', color: '#fff' }}
                             onClick={() => startEditingProduct(p)}
                             title="Edit product"
                           >
@@ -961,7 +961,7 @@ export default function ManageModal() {
                             onClick={() => handleDeleteProduct(p.id)}
                             title="Delete product"
                           >
-                            <Trash2 size={14} color="#f87171" />
+                            <Trash2 size={14} color="var(--danger)" />
                           </button>
                         </div>
                       </div>
@@ -1051,7 +1051,7 @@ export default function ManageModal() {
 
                 {/* SECURITY: CHANGE ADMIN PIN SECTION */}
                 <div style={{
-                  background: 'rgba(99, 102, 241, 0.08)',
+                  background: 'rgba(15, 52, 96, 0.08)',
                   border: '1px solid var(--border-active)',
                   borderRadius: '12px',
                   padding: '1rem',
@@ -1104,14 +1104,14 @@ export default function ManageModal() {
                   </div>
 
                   {pinChangeError && (
-                    <div style={{ color: '#f87171', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.65rem' }}>
+                    <div style={{ color: 'var(--danger)', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.65rem' }}>
                       <AlertCircle size={14} />
                       <span>{pinChangeError}</span>
                     </div>
                   )}
 
                   {pinChangeSuccess && (
-                    <div style={{ color: '#4ade80', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.65rem' }}>
+                    <div style={{ color: 'var(--success)', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.65rem' }}>
                       <Check size={14} />
                       <span>{pinChangeSuccess}</span>
                     </div>

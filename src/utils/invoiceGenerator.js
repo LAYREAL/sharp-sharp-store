@@ -40,7 +40,7 @@ export function printInvoice(order, storeSettings) {
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; padding: 40px; margin: 0; background: #fff; }
           .invoice-box { max-width: 720px; margin: auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
           .header-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
-          .brand-title { font-size: 26px; font-weight: 800; color: #4f46e5; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+          .brand-title { font-size: 26px; font-weight: 800; color: #0F3460; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
           .brand-tagline { font-size: 12px; color: #64748b; margin-top: 4px; }
           .invoice-badge { display: inline-block; background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
           .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; margin: 20px 0 10px; }
@@ -50,7 +50,7 @@ export function printInvoice(order, storeSettings) {
           .total-box { margin-top: 25px; text-align: right; font-size: 16px; border-top: 2px solid #1e293b; padding-top: 15px; }
           .footer-note { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px dashed #cbd5e1; font-size: 12px; color: #64748b; }
           .no-print { margin-bottom: 20px; text-align: right; }
-          .btn-print { background: #4f46e5; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+          .btn-print { background: #0F3460; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
           @media print { .no-print { display: none; } body { padding: 0; } .invoice-box { border: none; box-shadow: none; } }
         </style>
       </head>
@@ -103,7 +103,7 @@ export function printInvoice(order, storeSettings) {
 
           <div class="total-box">
             <span style="color: #64748b;">Total Amount Due: </span>
-            <strong style="font-size: 22px; color: #4f46e5; margin-left: 10px;">${currency} ${order.totalAmount.toLocaleString()}</strong>
+            <strong style="font-size: 22px; color: #0F3460; margin-left: 10px;">${currency} ${order.totalAmount.toLocaleString()}</strong>
           </div>
 
           <div style="margin-top: 20px; background: #f8fafc; padding: 12px 15px; border-radius: 8px; font-size: 13px;">
