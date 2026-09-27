@@ -97,7 +97,7 @@ export default function Sidebar() {
             }}
           >
             <div className="sidebar-item-left">
-              <div className="sidebar-item-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: 'var(--primary)' }}>
+              <div className="sidebar-item-icon" style={{ background: 'rgba(15, 52, 96, 0.15)', color: 'var(--primary)' }}>
                 <Receipt size={18} />
               </div>
               <div>
@@ -154,7 +154,7 @@ export default function Sidebar() {
             }}
           >
             <div className="sidebar-item-left">
-              <div className="sidebar-item-icon" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80' }}>
+              <div className="sidebar-item-icon" style={{ background: 'rgba(34, 197, 94, 0.15)', color: 'var(--success)' }}>
                 <HelpCircle size={18} />
               </div>
               <div>
@@ -170,7 +170,7 @@ export default function Sidebar() {
           <button
             type="button"
             className="sidebar-item"
-            style={{ background: 'rgba(99, 102, 241, 0.06)', borderColor: 'var(--border-active)' }}
+            style={{ background: 'rgba(15, 52, 96, 0.06)', borderColor: 'var(--border-active)' }}
             onClick={() => {
               setIsSidebarOpen(false);
               setTimeout(() => setIsManageOpen(true), 60);
@@ -199,7 +199,7 @@ export default function Sidebar() {
             onClick={openWhatsAppSupport}
           >
             <div className="sidebar-item-left">
-              <div className="sidebar-item-icon" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80' }}>
+              <div className="sidebar-item-icon" style={{ background: 'rgba(34, 197, 94, 0.15)', color: 'var(--success)' }}>
                 <MessageSquare size={18} />
               </div>
               <div>
@@ -208,7 +208,7 @@ export default function Sidebar() {
               </div>
             </div>
 
-            <span style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: 700 }}>Online</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}>Online</span>
           </button>
 
           {/* MoMo Account Card */}
