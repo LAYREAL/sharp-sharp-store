@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { DEFAULT_STORE_SETTINGS, DEFAULT_PRODUCTS, DEFAULT_ORDERS } from '../utils/defaultData';
+import { DEFAULT_STORE_SETTINGS, DEFAULT_PRODUCTS } from '../utils/defaultData';
 import { isSupabaseConfigured } from '../lib/supabase';
 import {
   fetchSettings, saveSettings,
   fetchProducts, saveProducts, updateProductStock,
-  fetchOrders, addOrderToDb, updateOrderStatusInDb
+  addOrderToDb
 } from '../lib/db';
 
 const StoreContext = createContext();
@@ -12,7 +12,6 @@ const StoreContext = createContext();
 const SETTINGS_KEY = 'sharp_sharp_settings_v3';
 const PRODUCTS_KEY = 'sharp_sharp_products_v3';
 const CART_KEY = 'sharp_sharp_cart_v3';
-const ORDERS_KEY = 'sharp_sharp_orders_v3';
 const CLIENT_ORDERS_KEY = 'sharp_sharp_client_orders_v3';
 const THEME_KEY = 'sharp_sharp_theme';
 const TUTORIAL_SEEN_KEY = 'sharp_sharp_seen_tutorial';
@@ -40,13 +39,6 @@ export function StoreProvider({ children }) {
     } catch { return []; }
   });
 
-  const [orders, setOrders] = useState(() => {
-    try {
-      const saved = localStorage.getItem(ORDERS_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_ORDERS;
-    } catch { return DEFAULT_ORDERS; }
-  });
-
   const [clientOrders, setClientOrders] = useState(() => {
     try {
       const saved = localStorage.getItem(CLIENT_ORDERS_KEY);
@@ -67,12 +59,10 @@ export function StoreProvider({ children }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, rawSetIsCartOpen] = useState(false);
   const [isCheckoutOpen, rawSetIsCheckoutOpen] = useState(false);
-  const [isManageOpen, rawSetIsManageOpen] = useState(false);
   const [isCustomerOrdersOpen, rawSetIsCustomerOrdersOpen] = useState(false);
   const [selectedProductForView, rawSetSelectedProductForView] = useState(null);
   const [activeLightboxMedia, rawSetActiveLightboxMedia] = useState(null);
   const [isSidebarOpen, rawSetIsSidebarOpen] = useState(false);
-  const [isOwnerAuthenticated, setIsOwnerAuthenticated] = useState(false);
   const [publishNotification, setPublishNotification] = useState(null);
   const [isDbLoading, setIsDbLoading] = useState(isSupabaseConfigured);
 
@@ -115,18 +105,6 @@ export function StoreProvider({ children }) {
       rawSetIsCheckoutOpen(false);
     } else {
       rawSetIsCheckoutOpen(val);
-    }
-  };
-
-  const setIsManageOpen = (val) => {
-    if (val && !isManageOpen) {
-      pushModalHistory('manage');
-      rawSetIsManageOpen(true);
-    } else if (!val && isManageOpen) {
-      popModalHistory('manage');
-      rawSetIsManageOpen(false);
-    } else {
-      rawSetIsManageOpen(val);
     }
   };
 
@@ -219,11 +197,6 @@ export function StoreProvider({ children }) {
         popModalHistory('orders');
         return;
       }
-      if (isManageOpen) {
-        rawSetIsManageOpen(false);
-        popModalHistory('manage');
-        return;
-      }
       if (isSidebarOpen) {
         rawSetIsSidebarOpen(false);
         popModalHistory('sidebar');
@@ -244,7 +217,6 @@ export function StoreProvider({ children }) {
     isCheckoutOpen,
     isCartOpen,
     isCustomerOrdersOpen,
-    isManageOpen,
     isSidebarOpen,
     isTutorialOpen
   ]);
@@ -271,10 +243,9 @@ export function StoreProvider({ children }) {
     let cancelled = false;
     (async () => {
       try {
-        const [dbSettings, dbProducts, dbOrders] = await Promise.all([
+        const [dbSettings, dbProducts] = await Promise.all([
           fetchSettings(),
-          fetchProducts(),
-          fetchOrders()
+          fetchProducts()
         ]);
 
         if (cancelled) return;
@@ -286,10 +257,6 @@ export function StoreProvider({ children }) {
         if (dbProducts) {
           setProducts(dbProducts);
           localStorage.setItem(PRODUCTS_KEY, JSON.stringify(dbProducts));
-        }
-        if (dbOrders) {
-          setOrders(dbOrders);
-          localStorage.setItem(ORDERS_KEY, JSON.stringify(dbOrders));
         }
       } catch (e) {
         console.warn('Supabase load error, using localStorage fallback:', e);
@@ -306,11 +273,6 @@ export function StoreProvider({ children }) {
     try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {}
   }, [cart]);
 
-  // ── Persist orders to localStorage ───────────────────────────────────────
-  useEffect(() => {
-    try { localStorage.setItem(ORDERS_KEY, JSON.stringify(orders)); } catch (e) {}
-  }, [orders]);
-
   // ── Persist client orders to localStorage ─────────────────────────────────
   useEffect(() => {
     try { localStorage.setItem(CLIENT_ORDERS_KEY, JSON.stringify(clientOrders)); } catch (e) {}
@@ -324,10 +286,9 @@ export function StoreProvider({ children }) {
         channel = new BroadcastChannel('sharp_sharp_live_sync');
         channel.onmessage = (event) => {
           if (event.data?.type === 'STORE_PUBLISHED') {
-            const { settings, products: newProducts, orders: newOrders } = event.data.payload;
+            const { settings, products: newProducts } = event.data.payload;
             if (settings) { setStoreSettings(settings); localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
             if (newProducts) { setProducts(newProducts); localStorage.setItem(PRODUCTS_KEY, JSON.stringify(newProducts)); }
-            if (newOrders) { setOrders(newOrders); localStorage.setItem(ORDERS_KEY, JSON.stringify(newOrders)); }
             showNotification('Store updated live!');
           }
         };
@@ -419,7 +380,6 @@ export function StoreProvider({ children }) {
       return updated;
     });
 
-    setOrders(prev => [newOrder, ...prev]);
     setClientOrders(prev => [newOrder, ...prev]);
     addOrderToDb(newOrder); // async, fire-and-forget
 
@@ -439,27 +399,16 @@ export function StoreProvider({ children }) {
     }
   };
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-    setClientOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-    updateOrderStatusInDb(orderId, newStatus); // async, fire-and-forget
-  };
-
-  const deleteOrder = (orderId) => {
-    setOrders(prev => prev.filter(o => o.id !== orderId));
-  };
-
-  // ── Save & Publish ────────────────────────────────────────────────────────
-  const saveAndPublishStore = async (updatedSettings, updatedProducts, updatedOrders = orders) => {
+  // ── Save & Publish (kept for potential future customer-side settings use;
+  // product/settings edits are now normally made from the separate admin app) ──
+  const saveAndPublishStore = async (updatedSettings, updatedProducts) => {
     setStoreSettings(updatedSettings);
     setProducts(updatedProducts);
-    setOrders(updatedOrders);
 
     // Save to localStorage immediately
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(updatedSettings));
       localStorage.setItem(PRODUCTS_KEY, JSON.stringify(updatedProducts));
-      localStorage.setItem(ORDERS_KEY, JSON.stringify(updatedOrders));
     } catch (e) {}
 
     // Broadcast to other open tabs
@@ -468,7 +417,7 @@ export function StoreProvider({ children }) {
         const channel = new BroadcastChannel('sharp_sharp_live_sync');
         channel.postMessage({
           type: 'STORE_PUBLISHED',
-          payload: { settings: updatedSettings, products: updatedProducts, orders: updatedOrders }
+          payload: { settings: updatedSettings, products: updatedProducts }
         });
         channel.close();
       }
@@ -493,7 +442,6 @@ export function StoreProvider({ children }) {
     products,
     categories,
     cart,
-    orders,
     clientOrders,
     theme,
     toggleTheme,
@@ -508,8 +456,6 @@ export function StoreProvider({ children }) {
     setIsCartOpen,
     isCheckoutOpen,
     setIsCheckoutOpen,
-    isManageOpen,
-    setIsManageOpen,
     isCustomerOrdersOpen,
     setIsCustomerOrdersOpen,
     selectedProductForView,
@@ -518,8 +464,6 @@ export function StoreProvider({ children }) {
     setActiveLightboxMedia,
     isSidebarOpen,
     setIsSidebarOpen,
-    isOwnerAuthenticated,
-    setIsOwnerAuthenticated,
     addToCart,
     updateCartQuantity,
     removeFromCart,
@@ -528,8 +472,6 @@ export function StoreProvider({ children }) {
     totalCartPrice,
     addOrder,
     reorderItems,
-    updateOrderStatus,
-    deleteOrder,
     saveAndPublishStore,
     publishNotification
   };

@@ -6,7 +6,6 @@ import ProductCard from './components/ProductCard';
 import StickyCartBar from './components/StickyCartBar';
 import CartModal from './components/CartModal';
 import CheckoutModal from './components/CheckoutModal';
-import ManageModal from './components/ManageModal';
 import ProductDetailModal from './components/ProductDetailModal';
 import MediaLightboxModal from './components/MediaLightboxModal';
 import CustomerOrdersModal from './components/CustomerOrdersModal';
@@ -77,7 +76,6 @@ function StoreMain() {
       {/* Slide-over & Dialog Modals */}
       <CartModal />
       <CheckoutModal />
-      <ManageModal />
       <ProductDetailModal />
       <MediaLightboxModal />
       <CustomerOrdersModal />

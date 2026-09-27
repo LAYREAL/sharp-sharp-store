@@ -39,7 +39,6 @@ export function settingsFromDb(row) {
     momoName: row.momo_name,
     momoNetwork: row.momo_network || 'MTN Mobile Money',
     currency: row.currency,
-    adminPin: row.admin_pin,
   };
 }
 
@@ -52,7 +51,6 @@ export function settingsToDb(s) {
     momo_name: s.momoName,
     momo_network: s.momoNetwork || 'MTN Mobile Money',
     currency: s.currency,
-    admin_pin: s.adminPin,
     updated_at: new Date().toISOString(),
   };
 }

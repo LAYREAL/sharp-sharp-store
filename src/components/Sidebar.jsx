@@ -7,7 +7,6 @@ import {
   Sun,
   Moon,
   HelpCircle,
-  Settings,
   MessageSquare,
   ShoppingBag,
   CreditCard,
@@ -26,7 +25,6 @@ export default function Sidebar() {
     theme,
     toggleTheme,
     setIsTutorialOpen,
-    setIsManageOpen,
     setIsCustomerOrdersOpen
   } = useStore();
 
@@ -164,29 +162,6 @@ export default function Sidebar() {
             </div>
 
             <ChevronRight size={16} color="var(--text-dim)" />
-          </button>
-
-          {/* Admin Control Panel */}
-          <button
-            type="button"
-            className="sidebar-item"
-            style={{ background: 'rgba(15, 52, 96, 0.06)', borderColor: 'var(--border-active)' }}
-            onClick={() => {
-              setIsSidebarOpen(false);
-              setTimeout(() => setIsManageOpen(true), 60);
-            }}
-          >
-            <div className="sidebar-item-left">
-              <div className="sidebar-item-icon" style={{ background: 'var(--primary-gradient)', color: '#fff' }}>
-                <Settings size={18} />
-              </div>
-              <div>
-                <div className="sidebar-item-label" style={{ color: 'var(--text-main)' }}>Store Management</div>
-                <div className="sidebar-item-desc">Admin panel, catalog & stock</div>
-              </div>
-            </div>
-
-            <ChevronRight size={16} color="var(--primary)" />
           </button>
 
           {/* Direct Support Section */}

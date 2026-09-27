@@ -5,8 +5,7 @@ export const DEFAULT_STORE_SETTINGS = {
   momoNumber: "0241234567",
   momoName: "SHARP SHARP Official",
   momoNetwork: "MTN Mobile Money",
-  currency: "GH₵",
-  adminPin: "1234"
+  currency: "GH₵"
 };
 
 export const DEFAULT_PRODUCTS = [
