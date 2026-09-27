@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { Menu, Search, ShoppingBag, Receipt, X } from 'lucide-react';
+import { Menu, Search, Receipt, X } from 'lucide-react';
 
 export default function Header() {
   const {
@@ -34,7 +34,7 @@ export default function Header() {
             </button>
 
             <div className="brand-logo">
-              <ShoppingBag size={20} color="#fff" />
+              <img src="/logo-mark.png" alt="SHARP SHARP" className="brand-logo-img" />
             </div>
 
             <div>
