@@ -5,7 +5,8 @@ import { ChevronRight, X, ShoppingBag, Smartphone, CreditCard, Package } from 'l
 const SLIDES = [
   {
     icon: ShoppingBag,
-    title: 'Welcome to SHARP SHARP',
+    isWelcome: true,
+    title: 'Welcome!',
     text: 'Watches, shoes and more — browse the catalog and find what you need in seconds.'
   },
   {
@@ -57,16 +58,23 @@ export default function WelcomeTutorial() {
           <X size={16} />
         </button>
 
-        {/* Icon */}
-        <div style={{
-          width: 72, height: 72, borderRadius: '50%',
-          background: 'var(--primary-gradient)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 1.25rem',
-          boxShadow: 'var(--shadow-glow)'
-        }}>
-          <Icon size={32} color="#fff" />
-        </div>
+        {/* Icon / Logo */}
+        {slide.isWelcome ? (
+          <div style={{ margin: '0 auto 1rem', maxWidth: 240 }}>
+            <img src="/wordmark-full-600.png" alt="SHARP" className="wm-navy" style={{ width: '100%', height: 'auto' }} />
+            <img src="/wordmark-full-light-600.png" alt="" aria-hidden="true" className="wm-white" style={{ width: '100%', height: 'auto' }} />
+          </div>
+        ) : (
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%',
+            background: 'var(--primary-gradient)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1.25rem',
+            boxShadow: 'var(--shadow-glow)'
+          }}>
+            <Icon size={32} color="#fff" />
+          </div>
+        )}
 
         {/* Text */}
         <h2 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '0.6rem', color: 'var(--text-main)' }}>

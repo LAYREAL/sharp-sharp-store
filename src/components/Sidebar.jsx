@@ -8,7 +8,6 @@ import {
   Moon,
   HelpCircle,
   MessageSquare,
-  ShoppingBag,
   CreditCard,
   Copy,
   Check,
@@ -57,17 +56,11 @@ export default function Sidebar() {
       <aside className="sidebar-drawer" onClick={(e) => e.stopPropagation()}>
         {/* Sidebar Header */}
         <div className="sidebar-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <div className="brand-logo" style={{ width: 38, height: 38 }}>
-              <ShoppingBag size={20} color="#fff" />
-            </div>
-            <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.2 }}>
-                {storeSettings.storeName}
-              </h3>
-              <p style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                {storeSettings.tagline}
-              </p>
+          <div className="sidebar-brand">
+            <img src="/logo-mark.png" alt="" aria-hidden="true" className="sidebar-mark" />
+            <div className="brand-wordmark brand-wordmark-sm" aria-label={storeSettings.storeName}>
+              <img src="/wordmark-short-300.png" alt={storeSettings.storeName} className="wm-navy" />
+              <img src="/wordmark-short-light-300.png" alt="" aria-hidden="true" className="wm-white" />
             </div>
           </div>
 

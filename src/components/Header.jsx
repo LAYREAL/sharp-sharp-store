@@ -33,13 +33,9 @@ export default function Header() {
               <Menu size={22} />
             </button>
 
-            <div className="brand-logo">
-              <img src="/logo-mark.png" alt="SHARP SHARP" className="brand-logo-img" />
-            </div>
-
-            <div>
-              <h1 className="brand-title">{storeSettings.storeName}</h1>
-              <p className="brand-tagline">{storeSettings.tagline}</p>
+            <div className="brand-wordmark" aria-label={storeSettings.storeName}>
+              <img src="/wordmark-short-300.png" alt={storeSettings.storeName} className="wm-navy" />
+              <img src="/wordmark-short-light-300.png" alt="" aria-hidden="true" className="wm-white" />
             </div>
           </div>
 

@@ -1616,3 +1616,20 @@ body {
 }
 
 
+
+
+/* ── Wordmark logo (navy on light, white on dark) ───────────────────────── */
+.wm-navy { display: none; }
+.wm-white { display: block; }
+[data-theme="light"] .wm-navy { display: block; }
+[data-theme="light"] .wm-white { display: none; }
+
+.brand-wordmark { display: flex; align-items: center; min-width: 0; }
+.brand-wordmark img { height: 38px; width: auto; max-width: 100%; object-fit: contain; }
+@media (min-width: 640px) {
+  .brand-wordmark img { height: 46px; }
+}
+.brand-wordmark-sm img { height: 32px; }
+
+.sidebar-brand { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
+.sidebar-mark { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; box-shadow: var(--shadow-glow); }
