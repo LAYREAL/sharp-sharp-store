@@ -48,16 +48,12 @@ export async function subscribeCustomerToOrder(orderId) {
     if (permission !== 'granted') return 'denied';
 
     const sub = await getOrCreateSubscription();
-    const { error } = await supabase.from('push_subscriptions').upsert(
-      {
-        sub_key: `customer:${orderId}:${sub.endpoint}`,
-        role: 'customer',
-        order_id: String(orderId),
-        endpoint: sub.endpoint,
-        subscription: sub.toJSON(),
-      },
-      { onConflict: 'sub_key', ignoreDuplicates: true }
-    );
+    const { error } = await supabase.rpc('register_push', {
+      p_role: 'customer',
+      p_order_id: String(orderId),
+      p_endpoint: sub.endpoint,
+      p_subscription: sub.toJSON(),
+    });
     return error ? 'error' : 'ok';
   } catch (e) {
     console.warn('subscribeCustomerToOrder failed:', e);
