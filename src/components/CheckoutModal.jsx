@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { generateWhatsAppLink } from '../utils/whatsappFormatter';
+import { subscribeCustomerToOrder } from '../lib/push';
 import { X, ArrowLeft, Phone, User, MapPin, Copy, Check, MessageSquare, ShieldCheck, CreditCard, Info } from 'lucide-react';
 
 export default function CheckoutModal() {
   const {
     isCheckoutOpen,
     setIsCheckoutOpen,
+    setIsCartOpen,
     cart,
     totalCartPrice,
     storeSettings,
@@ -42,9 +44,12 @@ export default function CheckoutModal() {
     }
 
     setErrorMsg('');
-    addOrder(customer);
+    const newOrder = addOrder(customer);
     const waUrl = generateWhatsAppLink(storeSettings, cart, totalCartPrice, customer);
     window.open(waUrl, '_blank');
+    // Opt this device in to a "payment confirmed" notification (fire-and-forget; the
+    // window.open above must stay first so the popup isn't blocked).
+    subscribeCustomerToOrder(newOrder.id);
     clearCart();
     setIsCheckoutOpen(false);
   };

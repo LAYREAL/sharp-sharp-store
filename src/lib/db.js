@@ -109,3 +109,16 @@ export async function updateOrderStatusInDb(orderId, status) {
     console.error('updateOrderStatusInDb error:', e);
   }
 }
+
+// Customers can't read the orders table (RLS). This RPC returns ONLY id + status
+// for the order IDs the device already knows about. See supabase/push-schema.sql.
+export async function fetchOrderStatuses(orderIds) {
+  if (!isSupabaseConfigured || !orderIds?.length) return null;
+  try {
+    const { data, error } = await supabase.rpc('get_order_statuses', { order_ids: orderIds });
+    if (error || !data) return null;
+    return Object.fromEntries(data.map((r) => [r.id, r.status]));
+  } catch {
+    return null;
+  }
+}

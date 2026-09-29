@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { DEFAULT_STORE_SETTINGS, DEFAULT_PRODUCTS } from '../utils/defaultData';
 import { isSupabaseConfigured } from '../lib/supabase';
 import {
   fetchSettings, saveSettings,
   fetchProducts, saveProducts, updateProductStock,
-  addOrderToDb
+  addOrderToDb, fetchOrderStatuses
 } from '../lib/db';
 
 const StoreContext = createContext();
@@ -273,6 +273,41 @@ export function StoreProvider({ children }) {
     try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {}
   }, [cart]);
 
+  // ── Keep each order's status in sync (customers can't read the orders table,
+  // so we ask a status-only RPC for the IDs this device already holds) ─────────
+  const clientOrdersRef = useRef(clientOrders);
+  useEffect(() => { clientOrdersRef.current = clientOrders; }, [clientOrders]);
+
+  const syncOrderStatuses = useCallback(async () => {
+    const ids = clientOrdersRef.current.map(o => o.id);
+    if (ids.length === 0) return;
+    const statusMap = await fetchOrderStatuses(ids);
+    if (!statusMap) return;
+    setClientOrders(prev => {
+      let changed = false;
+      const next = prev.map(o => {
+        const s = statusMap[o.id];
+        if (s && s !== o.status) { changed = true; return { ...o, status: s }; }
+        return o;
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    const initial = setTimeout(syncOrderStatuses, 1200);
+    const onVisible = () => { if (document.visibilityState === 'visible') syncOrderStatuses(); };
+    const onSwMessage = (e) => { if (e.data?.type === 'PUSH_RECEIVED') syncOrderStatuses(); };
+    document.addEventListener('visibilitychange', onVisible);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', onSwMessage);
+    return () => {
+      clearTimeout(initial);
+      document.removeEventListener('visibilitychange', onVisible);
+      if ('serviceWorker' in navigator) navigator.serviceWorker.removeEventListener('message', onSwMessage);
+    };
+  }, [syncOrderStatuses]);
+
   // ── Persist client orders to localStorage ─────────────────────────────────
   useEffect(() => {
     try { localStorage.setItem(CLIENT_ORDERS_KEY, JSON.stringify(clientOrders)); } catch (e) {}
@@ -471,6 +506,7 @@ export function StoreProvider({ children }) {
     totalCartItems,
     totalCartPrice,
     addOrder,
+    syncOrderStatuses,
     reorderItems,
     saveAndPublishStore,
     publishNotification

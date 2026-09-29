@@ -12,8 +12,10 @@ import {
   Copy,
   Check,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Smartphone
 } from 'lucide-react';
+import { useInstall } from '../lib/useInstall';
 
 export default function Sidebar() {
   const {
@@ -28,6 +30,8 @@ export default function Sidebar() {
   } = useStore();
 
   const [copiedMomo, setCopiedMomo] = React.useState(false);
+  const [showIosTip, setShowIosTip] = React.useState(false);
+  const { state: installState, install } = useInstall();
 
   if (!isSidebarOpen) return null;
 
@@ -156,6 +160,36 @@ export default function Sidebar() {
 
             <ChevronRight size={16} color="var(--text-dim)" />
           </button>
+
+          {/* Add to Home Screen (hidden when already installed or not installable) */}
+          {(installState === 'prompt' || installState === 'ios') && (
+            <>
+              <button
+                type="button"
+                className="sidebar-item"
+                onClick={() => {
+                  if (installState === 'prompt') install();
+                  else setShowIosTip(v => !v);
+                }}
+              >
+                <div className="sidebar-item-left">
+                  <div className="sidebar-item-icon" style={{ background: 'rgba(15, 52, 96, 0.15)', color: 'var(--primary)' }}>
+                    <Smartphone size={18} />
+                  </div>
+                  <div>
+                    <div className="sidebar-item-label">Add to Home Screen</div>
+                    <div className="sidebar-item-desc">Install SHARP SHARP like an app</div>
+                  </div>
+                </div>
+                <ChevronRight size={16} color="var(--text-dim)" />
+              </button>
+              {installState === 'ios' && showIosTip && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '0.5rem 0.9rem 0.75rem', lineHeight: 1.5 }}>
+                  In Safari, tap the <strong>Share</strong> button, then choose <strong>Add to Home Screen</strong>.
+                </div>
+              )}
+            </>
+          )}
 
           {/* Direct Support Section */}
           <div className="sidebar-section-title" style={{ marginTop: '1.25rem' }}>Store Support & Payment</div>

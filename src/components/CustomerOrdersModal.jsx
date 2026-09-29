@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { printInvoice } from '../utils/invoiceGenerator';
-import { X, ArrowLeft, Receipt, FileText, RefreshCw, Download, CheckCircle, Clock, MapPin, Package } from 'lucide-react';
+import { subscribeCustomerToOrder, pushSupported, notificationPermission } from '../lib/push';
+import { X, ArrowLeft, Receipt, FileText, RefreshCw, Download, CheckCircle, Clock, MapPin, Package, Bell } from 'lucide-react';
 
 export default function CustomerOrdersModal() {
   const {
@@ -9,10 +10,24 @@ export default function CustomerOrdersModal() {
     setIsCustomerOrdersOpen,
     clientOrders,
     storeSettings,
-    reorderItems
+    reorderItems,
+    syncOrderStatuses
   } = useStore();
 
+  const [alertsOn, setAlertsOn] = useState({});
+
+  // Pull the latest payment status whenever the list is opened
+  useEffect(() => {
+    if (isCustomerOrdersOpen) syncOrderStatuses();
+  }, [isCustomerOrdersOpen, syncOrderStatuses]);
+
   if (!isCustomerOrdersOpen) return null;
+
+  const enableAlerts = async (orderId) => {
+    const result = await subscribeCustomerToOrder(orderId);
+    if (result === 'ok') setAlertsOn(prev => ({ ...prev, [orderId]: true }));
+    else if (result === 'denied') alert('Notifications are blocked for this site. Allow them in your browser settings to get payment alerts.');
+  };
 
   return (
     <div className="modal-overlay" onClick={() => setIsCustomerOrdersOpen(false)}>
@@ -120,6 +135,20 @@ export default function CustomerOrdersModal() {
                       <span>{storeSettings.currency} {ord.totalAmount.toLocaleString()}</span>
                     </div>
                   </div>
+
+                  {/* Payment-confirmed alerts (only for unpaid orders, only where the browser supports it) */}
+                  {!isPaid && pushSupported() && notificationPermission() !== 'denied' && (
+                    alertsOn[ord.id] ? (
+                      <div style={{ fontSize: '0.775rem', color: 'var(--success)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Bell size={13} /> We'll notify you when your payment is confirmed
+                      </div>
+                    ) : (
+                      <button type="button" className="btn-icon" style={{ justifyContent: 'center' }} onClick={() => enableAlerts(ord.id)}>
+                        <Bell size={14} />
+                        <span>Notify me when payment is confirmed</span>
+                      </button>
+                    )
+                  )}
 
                   {/* Action buttons */}
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
