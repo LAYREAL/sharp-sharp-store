@@ -1,0 +1,191 @@
+import React, { useEffect, useState } from 'react';
+import { useStore } from '../context/StoreContext';
+import { printInvoice } from '../utils/invoiceGenerator';
+import { subscribeCustomerToOrder, pushSupported, notificationPermission, isOrderSubscribed } from '../lib/push';
+import { X, ArrowLeft, Receipt, FileText, RefreshCw, Download, CheckCircle, Clock, MapPin, Package, Bell } from 'lucide-react';
+
+export default function CustomerOrdersModal() {
+  const {
+    isCustomerOrdersOpen,
+    setIsCustomerOrdersOpen,
+    clientOrders,
+    storeSettings,
+    reorderItems,
+    syncOrderStatuses
+  } = useStore();
+
+  const [alertsOn, setAlertsOn] = useState({});
+
+  // Pull the latest payment status whenever the list is opened
+  useEffect(() => {
+    if (isCustomerOrdersOpen) syncOrderStatuses();
+  }, [isCustomerOrdersOpen, syncOrderStatuses]);
+
+  if (!isCustomerOrdersOpen) return null;
+
+  const enableAlerts = async (orderId) => {
+    const result = await subscribeCustomerToOrder(orderId);
+    if (result === 'ok') setAlertsOn(prev => ({ ...prev, [orderId]: true }));
+    else if (result === 'denied') alert('Notifications are blocked for this site. Allow them in your browser settings to get payment alerts.');
+  };
+
+  return (
+    <div className="modal-overlay" onClick={() => setIsCustomerOrdersOpen(false)}>
+      <div className="modal-content" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={() => setIsCustomerOrdersOpen(false)}
+            style={{ padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+          <h2 className="modal-title" style={{ fontSize: '1.05rem', margin: '0 0.5rem', flex: 1, textAlign: 'center' }}>
+            <Receipt size={18} color="var(--primary)" />
+            <span>My Orders & Invoices</span>
+          </h2>
+          <button className="btn-close" onClick={() => setIsCustomerOrdersOpen(false)}>
+            <X size={18} />
+          </button>
+        </div>
+
+        {clientOrders.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+            <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'center' }}>
+              <Receipt size={48} color="var(--text-dim)" />
+            </div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>No orders placed yet</h3>
+            <p style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              When you order on WhatsApp, your order history and downloadable receipts will save here automatically.
+            </p>
+          </div>
+        ) : (
+          <div style={{ maxHeight: '420px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {clientOrders.map((ord) => {
+              const isPaid = ord.status === 'Paid' || ord.status === 'Fulfilled';
+
+              return (
+                <div
+                  key={ord.id}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.03)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: '12px',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.6rem'
+                  }}
+                >
+                  {/* Header row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <span style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '0.95rem' }}>{ord.id}</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>
+                        {(() => {
+                          try {
+                            const d = new Date(ord.date);
+                            return isNaN(d.getTime()) ? 'Recent' : `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                          } catch { return 'Recent'; }
+                        })()}
+                      </span>
+                    </div>
+
+                    <span
+                      style={{
+                        background: isPaid ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                        color: isPaid ? 'var(--success)' : 'var(--warning)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: '20px',
+                        padding: '0.2rem 0.6rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem'
+                      }}
+                    >
+                      {isPaid ? <CheckCircle size={12} /> : <Clock size={12} />}
+                      <span>{ord.status || 'Pending Payment'}</span>
+                    </span>
+                  </div>
+
+                  {/* Delivery details */}
+                  <div style={{ fontSize: '0.825rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <MapPin size={14} color="var(--primary)" />
+                    <span>Delivery Address: <strong style={{ color: 'var(--text-main)' }}>{ord.customerAddress}</strong></span>
+                  </div>
+
+                  {/* Items list */}
+                  <div style={{ background: 'rgba(0,0,0,0.25)', padding: '0.6rem 0.8rem', borderRadius: '8px', fontSize: '0.825rem' }}>
+                    {(Array.isArray(ord.items) ? ord.items : []).map((it, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', margin: '0.25rem 0' }}>
+                        <span>
+                          • {it.quantity}x {it.name} {it.selectedSize ? `[Size: ${it.selectedSize}]` : ''}
+                        </span>
+                        <strong style={{ color: 'var(--text-muted)' }}>
+                          {storeSettings.currency} {(it.price * it.quantity).toLocaleString()}
+                        </strong>
+                      </div>
+                    ))}
+                    <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '0.4rem', paddingTop: '0.4rem', display: 'flex', justifyContent: 'space-between', fontWeight: 800, color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                      <span>Total Amount:</span>
+                      <span>{storeSettings.currency} {ord.totalAmount.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Payment-confirmed alerts (only for unpaid orders, only where the browser supports it) */}
+                  {!isPaid && pushSupported() && notificationPermission() !== 'denied' && (
+                    (alertsOn[ord.id] || isOrderSubscribed(ord.id)) ? (
+                      <div style={{ fontSize: '0.775rem', color: 'var(--success)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Bell size={13} /> We'll notify you when your payment is confirmed
+                      </div>
+                    ) : (
+                      <button type="button" className="btn-icon" style={{ justifyContent: 'center' }} onClick={() => enableAlerts(ord.id)}>
+                        <Bell size={14} />
+                        <span>Notify me when payment is confirmed</span>
+                      </button>
+                    )
+                  )}
+
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        background: 'var(--primary-gradient)',
+                        borderColor: 'transparent',
+                        color: '#fff',
+                        boxShadow: 'var(--shadow-glow)'
+                      }}
+                      onClick={() => printInvoice(ord, storeSettings)}
+                    >
+                      <Download size={15} />
+                      <span>Download Official Invoice</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-icon"
+                      style={{ justifyContent: 'center' }}
+                      onClick={() => reorderItems(ord)}
+                      title="Add these items back to cart"
+                    >
+                      <RefreshCw size={14} />
+                      <span>Re-Order</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
