@@ -60,3 +60,41 @@ export async function subscribeCustomerToOrder(orderId) {
     return 'error';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Pending queue: on phones, opening WhatsApp right after checkout can pause this page
+// before the subscription is saved. We remember the order id and finish registering
+// the next time the store is in front of the customer.
+// ---------------------------------------------------------------------------
+const PENDING_KEY = 'sharp_push_pending';
+
+const readPending = () => {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch { return []; }
+};
+const writePending = (list) => {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+};
+
+export function queuePushForOrder(orderId) {
+  const list = readPending();
+  if (!list.includes(String(orderId))) writePending([...list, String(orderId)]);
+}
+
+export async function registerPendingPush() {
+  try {
+    if (!pushSupported() || Notification.permission !== 'granted') return;
+    for (const id of readPending()) {
+      const result = await subscribeCustomerToOrder(id);
+      if (result === 'ok') writePending(readPending().filter((x) => x !== id));
+    }
+  } catch (e) {
+    console.warn('registerPendingPush failed:', e);
+  }
+}
+
+// Must be called straight from a tap so the browser will show its permission prompt.
+export async function askPushPermission() {
+  if (!pushSupported()) return 'unsupported';
+  if (Notification.permission !== 'default') return Notification.permission;
+  try { return await Notification.requestPermission(); } catch { return 'default'; }
+}

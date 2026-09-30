@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { generateWhatsAppLink } from '../utils/whatsappFormatter';
-import { subscribeCustomerToOrder } from '../lib/push';
-import { X, ArrowLeft, Phone, User, MapPin, Copy, Check, MessageSquare, ShieldCheck, CreditCard, Info } from 'lucide-react';
+import { pushSupported, notificationPermission, askPushPermission, queuePushForOrder, registerPendingPush } from '../lib/push';
+import { isIOS, isStandalone } from '../lib/install';
+import { X, ArrowLeft, Phone, User, MapPin, Copy, Check, MessageSquare, ShieldCheck, CreditCard, Info, Bell } from 'lucide-react';
 
 export default function CheckoutModal() {
   const {
@@ -25,6 +26,20 @@ export default function CheckoutModal() {
 
   const [copied, setCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [wantAlerts, setWantAlerts] = useState(
+    () => pushSupported() && notificationPermission() === 'granted'
+  );
+
+  const canOfferAlerts = pushSupported() && notificationPermission() !== 'denied';
+  const iosNeedsInstall = isIOS() && !isStandalone() && !pushSupported();
+
+  // The browser only shows its permission prompt from a direct tap, and after checkout
+  // WhatsApp takes over the screen, so we ask here, while the customer is still looking at the form.
+  const toggleAlerts = async () => {
+    if (wantAlerts) { setWantAlerts(false); return; }
+    const result = await askPushPermission();
+    setWantAlerts(result === 'granted');
+  };
 
   if (!isCheckoutOpen) return null;
 
@@ -46,10 +61,10 @@ export default function CheckoutModal() {
     setErrorMsg('');
     const newOrder = addOrder(customer);
     const waUrl = generateWhatsAppLink(storeSettings, cart, totalCartPrice, customer);
+    // Remember this order for payment alerts before WhatsApp takes over the screen.
+    if (wantAlerts && notificationPermission() === 'granted') queuePushForOrder(newOrder.id);
     window.open(waUrl, '_blank');
-    // Opt this device in to a "payment confirmed" notification (fire-and-forget; the
-    // window.open above must stay first so the popup isn't blocked).
-    subscribeCustomerToOrder(newOrder.id);
+    registerPendingPush(); // finishes now if it can, otherwise when the customer comes back
     clearCart();
     setIsCheckoutOpen(false);
   };
@@ -139,6 +154,32 @@ export default function CheckoutModal() {
               onChange={(e) => setCustomer({ ...customer, address: e.target.value })}
             />
           </div>
+
+          {/* Payment-confirmed alerts */}
+          {canOfferAlerts && (
+            <button
+              type="button"
+              onClick={toggleAlerts}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem',
+                padding: '0.7rem 0.85rem', marginBottom: '1rem', borderRadius: '10px',
+                border: `1px solid ${wantAlerts ? 'var(--success)' : 'var(--border-color, rgba(128,128,128,0.35))'}`,
+                background: wantAlerts ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit'
+              }}
+            >
+              <Bell size={16} color={wantAlerts ? 'var(--success)' : 'var(--text-muted)'} />
+              <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600 }}>
+                {wantAlerts ? 'We will notify you when your payment is confirmed' : 'Notify me when my payment is confirmed'}
+              </span>
+              {wantAlerts && <Check size={16} color="var(--success)" />}
+            </button>
+          )}
+          {iosNeedsInstall && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem', lineHeight: 1.5 }}>
+              To get a payment alert on iPhone, add this store to your Home Screen (Share, then Add to Home Screen) and order from there.
+            </div>
+          )}
 
           {/* MoMo Payment Details Display */}
           <div className="momo-card">

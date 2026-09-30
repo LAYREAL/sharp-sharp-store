@@ -6,6 +6,7 @@ import {
   fetchProducts, saveProducts, updateProductStock,
   addOrderToDb, fetchOrderStatuses
 } from '../lib/db';
+import { registerPendingPush } from '../lib/push';
 
 const StoreContext = createContext();
 
@@ -296,8 +297,8 @@ export function StoreProvider({ children }) {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    const initial = setTimeout(syncOrderStatuses, 1200);
-    const onVisible = () => { if (document.visibilityState === 'visible') syncOrderStatuses(); };
+    const initial = setTimeout(() => { syncOrderStatuses(); registerPendingPush(); }, 1200);
+    const onVisible = () => { if (document.visibilityState === 'visible') { syncOrderStatuses(); registerPendingPush(); } };
     const onSwMessage = (e) => { if (e.data?.type === 'PUSH_RECEIVED') syncOrderStatuses(); };
     document.addEventListener('visibilitychange', onVisible);
     if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', onSwMessage);
