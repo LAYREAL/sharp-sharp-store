@@ -7,6 +7,7 @@ import {
   addOrderToDb, fetchOrderStatuses
 } from '../lib/db';
 import { registerPendingPush } from '../lib/push';
+import { productIdFromLocation } from '../lib/share';
 
 const StoreContext = createContext();
 
@@ -224,6 +225,21 @@ export function StoreProvider({ children }) {
     isSidebarOpen,
     isTutorialOpen
   ]);
+
+  // ── Open a shared product link (/p/<id>) once the product list is ready ───────
+  const openedSharedLinkRef = useRef(false);
+  useEffect(() => {
+    if (openedSharedLinkRef.current || isDbLoading) return;
+    const id = productIdFromLocation();
+    if (!id) { openedSharedLinkRef.current = true; return; }
+    openedSharedLinkRef.current = true;
+    try { window.history.replaceState(null, '', '/'); } catch (e) {}
+    const match = products.find(p => String(p.id) === String(id));
+    if (match) {
+      pushModalHistory('product');
+      rawSetSelectedProductForView(match);
+    }
+  }, [isDbLoading, products]);
 
   // ── Theme ─────────────────────────────────────────────────────────────────
   useEffect(() => {

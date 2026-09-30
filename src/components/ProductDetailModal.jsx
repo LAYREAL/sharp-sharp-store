@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
-import { X, ArrowLeft, ShoppingBag, Check, ShieldCheck, Truck, Play, Maximize2, Package } from 'lucide-react';
+import { X, ArrowLeft, ShoppingBag, Check, ShieldCheck, Truck, Play, Maximize2, Package, Share2, Link2 } from 'lucide-react';
+import { shareProduct } from '../lib/share';
 
 export default function ProductDetailModal() {
   const {
@@ -13,6 +14,7 @@ export default function ProductDetailModal() {
 
   const [isAdded, setIsAdded] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
+  const [shareState, setShareState] = useState('');
 
   const product = selectedProductForView;
 
@@ -123,6 +125,25 @@ export default function ProductDetailModal() {
           >
             <ArrowLeft size={16} />
             <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>Back</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-icon"
+            aria-label="Share this product"
+            style={{
+              position: 'absolute', top: '1rem', right: '4rem', zIndex: 10,
+              background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', color: '#fff',
+              border: '1px solid rgba(255,255,255,0.2)', padding: '0.4rem 0.75rem', gap: '0.35rem'
+            }}
+            onClick={async (e) => {
+              e.stopPropagation();
+              const result = await shareProduct(product, storeSettings.currency);
+              if (result === 'copied') { setShareState('copied'); setTimeout(() => setShareState(''), 2000); }
+            }}
+          >
+            {shareState === 'copied' ? <Link2 size={16} /> : <Share2 size={16} />}
+            <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{shareState === 'copied' ? 'Link copied' : 'Share'}</span>
           </button>
 
           <button
@@ -258,7 +279,7 @@ export default function ProductDetailModal() {
             ) : (
               <>
                 <ShoppingBag size={18} />
-                <span>Add {selectedSize ? `[${selectedSize}]` : ''} to Cart</span>
+                <span>{isOutOfStock ? 'Sold out' : `Add ${selectedSize ? `[${selectedSize}]` : ''} to Cart`}</span>
               </>
             )}
           </button>

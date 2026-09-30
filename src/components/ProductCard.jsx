@@ -31,11 +31,16 @@ export default function ProductCard({ product }) {
               alt={product.name}
               loading="lazy"
               decoding="async"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }}
+              style={{
+                width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px',
+                filter: isOutOfStock ? 'grayscale(1) brightness(0.7)' : 'none'
+              }}
             />
           ) : (
             <Package size={36} color="var(--primary)" />
           )}
+
+          {isOutOfStock && <div className="sold-out-overlay"><span>Sold out</span></div>}
 
           {product.isStockTracked && (
             <span
@@ -43,7 +48,7 @@ export default function ProductCard({ product }) {
                 isOutOfStock ? 'stock-out' : isLowStock ? 'stock-low' : 'stock-in'
               }`}
             >
-              {isOutOfStock ? 'Out of Stock' : isLowStock ? `Only ${product.stock} Left` : 'In Stock'}
+              {isOutOfStock ? 'Out of Stock' : isLowStock ? `Only ${product.stock} left` : 'In Stock'}
             </span>
           )}
         </div>
@@ -105,7 +110,7 @@ export default function ProductCard({ product }) {
           ) : (
             <>
               <ShoppingBag size={16} />
-              <span>Add to cart</span>
+              <span>{isOutOfStock ? 'Sold out' : 'Add to cart'}</span>
             </>
           )}
         </button>
