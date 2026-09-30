@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { printInvoice } from '../utils/invoiceGenerator';
-import { subscribeCustomerToOrder, pushSupported, notificationPermission } from '../lib/push';
+import { subscribeCustomerToOrder, pushSupported, notificationPermission, isOrderSubscribed } from '../lib/push';
 import { X, ArrowLeft, Receipt, FileText, RefreshCw, Download, CheckCircle, Clock, MapPin, Package, Bell } from 'lucide-react';
 
 export default function CustomerOrdersModal() {
@@ -138,7 +138,7 @@ export default function CustomerOrdersModal() {
 
                   {/* Payment-confirmed alerts (only for unpaid orders, only where the browser supports it) */}
                   {!isPaid && pushSupported() && notificationPermission() !== 'denied' && (
-                    alertsOn[ord.id] ? (
+                    (alertsOn[ord.id] || isOrderSubscribed(ord.id)) ? (
                       <div style={{ fontSize: '0.775rem', color: 'var(--success)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <Bell size={13} /> We'll notify you when your payment is confirmed
                       </div>

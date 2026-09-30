@@ -162,17 +162,18 @@ export default function CheckoutModal() {
               onClick={toggleAlerts}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem',
-                padding: '0.7rem 0.85rem', marginBottom: '1rem', borderRadius: '10px',
-                border: `1px solid ${wantAlerts ? 'var(--success)' : 'var(--border-color, rgba(128,128,128,0.35))'}`,
-                background: wantAlerts ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                padding: '0.95rem 1rem', marginBottom: '1rem', borderRadius: '12px',
+                border: `2px solid ${wantAlerts ? 'var(--success)' : 'var(--primary)'}`,
+                background: wantAlerts ? 'rgba(16, 185, 129, 0.12)' : 'rgba(15, 52, 96, 0.14)',
+                animation: wantAlerts ? 'none' : 'alertPulse 1.8s ease-in-out infinite',
                 color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit'
               }}
             >
-              <Bell size={16} color={wantAlerts ? 'var(--success)' : 'var(--text-muted)'} />
-              <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600 }}>
-                {wantAlerts ? 'We will notify you when your payment is confirmed' : 'Notify me when my payment is confirmed'}
+              <Bell size={22} color={wantAlerts ? 'var(--success)' : 'var(--primary)'} />
+              <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: 700, lineHeight: 1.35 }}>
+                {wantAlerts ? 'Alerts on. We will notify you when your payment is confirmed' : 'Tap here to get notified when your payment is confirmed'}
               </span>
-              {wantAlerts && <Check size={16} color="var(--success)" />}
+              {wantAlerts && <Check size={20} color="var(--success)" />}
             </button>
           )}
           {iosNeedsInstall && (

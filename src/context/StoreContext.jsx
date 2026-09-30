@@ -19,19 +19,22 @@ const TUTORIAL_SEEN_KEY = 'sharp_sharp_seen_tutorial';
 
 export function StoreProvider({ children }) {
   // ── Persisted State (localStorage first, then Supabase) ──────────────────
-  const [storeSettings, setStoreSettings] = useState(() => {
+  // When the live database is connected we never start from a saved copy, so customers
+  // can't briefly see old products or prices. The saved copy is only an offline fallback.
+  const readCached = (key, fallback) => {
     try {
-      const saved = localStorage.getItem(SETTINGS_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_STORE_SETTINGS;
-    } catch { return DEFAULT_STORE_SETTINGS; }
-  });
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : fallback;
+    } catch { return fallback; }
+  };
 
-  const [products, setProducts] = useState(() => {
-    try {
-      const saved = localStorage.getItem(PRODUCTS_KEY);
-      return saved ? JSON.parse(saved) : DEFAULT_PRODUCTS;
-    } catch { return DEFAULT_PRODUCTS; }
-  });
+  const [storeSettings, setStoreSettings] = useState(() =>
+    isSupabaseConfigured ? DEFAULT_STORE_SETTINGS : readCached(SETTINGS_KEY, DEFAULT_STORE_SETTINGS)
+  );
+
+  const [products, setProducts] = useState(() =>
+    isSupabaseConfigured ? [] : readCached(PRODUCTS_KEY, DEFAULT_PRODUCTS)
+  );
 
   const [cart, setCart] = useState(() => {
     try {
@@ -237,22 +240,31 @@ export function StoreProvider({ children }) {
     }
   }, [isTutorialOpen]);
 
-  // ── Load from Supabase on mount ───────────────────────────────────────────
+  // ── Load from Supabase on mount, and again whenever the app comes back to the front ──
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
     let cancelled = false;
-    // If the network is very slow, stop showing placeholders and use the saved copy.
-    const slowNetworkTimer = setTimeout(() => { if (!cancelled) setIsDbLoading(false); }, 8000);
-    (async () => {
+    let slowTimer = null;
+    let hiddenAt = null;
+
+    const useSavedCopy = () => {
+      setStoreSettings(readCached(SETTINGS_KEY, DEFAULT_STORE_SETTINGS));
+      setProducts(readCached(PRODUCTS_KEY, DEFAULT_PRODUCTS));
+    };
+
+    const load = async (showPlaceholders) => {
+      if (showPlaceholders) {
+        setIsDbLoading(true);
+        // Very slow network: stop waiting and fall back to the saved copy.
+        clearTimeout(slowTimer);
+        slowTimer = setTimeout(() => {
+          if (!cancelled) { useSavedCopy(); setIsDbLoading(false); }
+        }, 8000);
+      }
       try {
-        const [dbSettings, dbProducts] = await Promise.all([
-          fetchSettings(),
-          fetchProducts()
-        ]);
-
+        const [dbSettings, dbProducts] = await Promise.all([fetchSettings(), fetchProducts()]);
         if (cancelled) return;
-
         if (dbSettings) {
           setStoreSettings(dbSettings);
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(dbSettings));
@@ -262,14 +274,31 @@ export function StoreProvider({ children }) {
           localStorage.setItem(PRODUCTS_KEY, JSON.stringify(dbProducts));
         }
       } catch (e) {
-        console.warn('Supabase load error, using localStorage fallback:', e);
+        console.warn('Supabase load error, using saved copy:', e);
+        if (!cancelled) useSavedCopy();
       } finally {
-        clearTimeout(slowNetworkTimer);
+        clearTimeout(slowTimer);
         if (!cancelled) setIsDbLoading(false);
       }
-    })();
+    };
 
-    return () => { cancelled = true; clearTimeout(slowNetworkTimer); };
+    load(true);
+
+    // A home-screen app stays alive in the background, so its data goes stale.
+    // If it was away for more than 30 seconds, reload from the database when it returns.
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt > 30000) load(true);
+      else if (hiddenAt) load(false);
+      hiddenAt = null;
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(slowTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, []);
 
   // ── Persist cart to localStorage ──────────────────────────────────────────

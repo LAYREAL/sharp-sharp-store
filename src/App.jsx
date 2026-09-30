@@ -11,6 +11,7 @@ import MediaLightboxModal from './components/MediaLightboxModal';
 import CustomerOrdersModal from './components/CustomerOrdersModal';
 import WelcomeTutorial from './components/WelcomeTutorial';
 import Sidebar from './components/Sidebar';
+import PaymentAlertBanner from './components/PaymentAlertBanner';
 import { Radio, Search } from 'lucide-react';
 
 function StoreMain() {
@@ -39,6 +40,9 @@ function StoreMain() {
 
       {/* Main Content Area */}
       <main className="app-container">
+        {/* Payment-alert prompt (only when the customer has an unpaid order) */}
+        <PaymentAlertBanner />
+
         {/* Category Tabs */}
         <CategoryTabs />
 

@@ -1652,3 +1652,8 @@ body {
   0% { background-position: 100% 50%; }
   100% { background-position: 0 50%; }
 }
+
+@keyframes alertPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(15, 52, 96, 0.45); }
+  50% { box-shadow: 0 0 0 7px rgba(15, 52, 96, 0); }
+}

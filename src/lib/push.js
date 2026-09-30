@@ -36,6 +36,18 @@ async function getOrCreateSubscription() {
   });
 }
 
+const SUBSCRIBED_KEY = 'sharp_push_subscribed';
+const readSubscribed = () => {
+  try { return JSON.parse(localStorage.getItem(SUBSCRIBED_KEY) || '[]'); } catch { return []; }
+};
+function markSubscribed(orderId) {
+  const list = readSubscribed();
+  if (!list.includes(String(orderId))) {
+    try { localStorage.setItem(SUBSCRIBED_KEY, JSON.stringify([...list, String(orderId)].slice(-50))); } catch { /* ignore */ }
+  }
+}
+export const isOrderSubscribed = (orderId) => readSubscribed().includes(String(orderId));
+
 /**
  * Ask permission (if needed) and register this device to be told when `orderId` is paid.
  * Returns 'ok' | 'denied' | 'unsupported' | 'error'. Never throws.
@@ -54,6 +66,7 @@ export async function subscribeCustomerToOrder(orderId) {
       p_endpoint: sub.endpoint,
       p_subscription: sub.toJSON(),
     });
+    if (!error) markSubscribed(orderId);
     return error ? 'error' : 'ok';
   } catch (e) {
     console.warn('subscribeCustomerToOrder failed:', e);
