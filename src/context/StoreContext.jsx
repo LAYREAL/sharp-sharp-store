@@ -242,6 +242,8 @@ export function StoreProvider({ children }) {
     if (!isSupabaseConfigured) return;
 
     let cancelled = false;
+    // If the network is very slow, stop showing placeholders and use the saved copy.
+    const slowNetworkTimer = setTimeout(() => { if (!cancelled) setIsDbLoading(false); }, 8000);
     (async () => {
       try {
         const [dbSettings, dbProducts] = await Promise.all([
@@ -262,11 +264,12 @@ export function StoreProvider({ children }) {
       } catch (e) {
         console.warn('Supabase load error, using localStorage fallback:', e);
       } finally {
+        clearTimeout(slowNetworkTimer);
         if (!cancelled) setIsDbLoading(false);
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(slowNetworkTimer); };
   }, []);
 
   // ── Persist cart to localStorage ──────────────────────────────────────────

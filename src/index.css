@@ -1633,3 +1633,22 @@ body {
 
 .sidebar-brand { display: flex; align-items: center; gap: 0.65rem; min-width: 0; }
 .sidebar-mark { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; box-shadow: var(--shadow-glow); }
+
+
+/* Loading placeholders shown until the live product list arrives */
+.skeleton-card {
+  padding: 0.75rem;
+  border-radius: 16px;
+  border: 1px solid var(--border-color, rgba(128, 128, 128, 0.2));
+  background: var(--card-bg, transparent);
+}
+.skeleton-block {
+  background: linear-gradient(90deg, rgba(128,128,128,0.14) 25%, rgba(128,128,128,0.26) 37%, rgba(128,128,128,0.14) 63%);
+  background-size: 400% 100%;
+  animation: skeletonShimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+@keyframes skeletonShimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}

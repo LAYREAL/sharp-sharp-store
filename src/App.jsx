@@ -43,7 +43,17 @@ function StoreMain() {
         <CategoryTabs />
 
         {/* Product Grid */}
-        {filteredProducts.length === 0 ? (
+        {isDbLoading ? (
+          <div className="product-grid" aria-busy="true" aria-label="Loading products">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton-card">
+                <div className="skeleton-block" style={{ aspectRatio: '1 / 1', width: '100%', borderRadius: 12 }} />
+                <div className="skeleton-block" style={{ height: 14, width: '70%', marginTop: 12 }} />
+                <div className="skeleton-block" style={{ height: 14, width: '40%', marginTop: 8 }} />
+              </div>
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-muted)' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
               <div style={{
